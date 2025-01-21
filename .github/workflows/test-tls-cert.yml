@@ -1,0 +1,17 @@
+name: Test TLS Certificate with Python Service
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test-tls:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Test Python Service
+      run: echo "Hello"
