@@ -67,6 +67,10 @@ func createNewIdentityHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	_, csrBytes, err := GenerateOCSPCert(req.CommonName)
+	if err != nil {
+		http.Error(w, "Cert generation failed.", http.StatusBadRequest)
+		return
+	}
 
 	csrPEM := pem.EncodeToMemory(&pem.Block{
 		Type:  "CERTIFICATE REQUEST",
@@ -90,6 +94,8 @@ func main() {
 	hostnamePrivateApi := ":8080"
 
 	http.HandleFunc("/createnewidentity", createNewIdentityHandler)
+
+	http.HandleFunc("/uploadcertificate", createNewIdentityHandler)
 
 	http.ListenAndServe(hostnamePrivateApi, nil)
 }
