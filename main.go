@@ -1,87 +1,95 @@
 package main
 
 import (
-	"crypto"
-	"encoding/base64"
+	"crypto/ecdsa"
+	"crypto/elliptic"
+	"crypto/rand"
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/json"
+	"encoding/pem"
 	"fmt"
-	"log"
 	"net/http"
-	"time"
-
-	"golang.org/x/crypto/ocsp"
 )
 
-func handleOCSPRequest(w http.ResponseWriter, r *http.Request) {
-	// Read the OCSP request from the incoming HTTP request
-	reqBody := make([]byte, r.ContentLength)
-	_, err := r.Body.Read(reqBody)
-	if err != nil {
-		http.Error(w, "Failed to read request", http.StatusBadRequest)
-		return
-	}
-	defer r.Body.Close()
+type CreateNewIdentityRequest struct {
+	CommonName string `json:"common_name"`
+}
 
-	// Decode the OCSP request
-	ocspRequest, err := base64.StdEncoding.DecodeString(string(reqBody))
+type CreateNewIdentityResponse struct {
+	CSR string `json:"csr"`
+}
+
+func GenerateOCSPCert(commonName string) (privateKeyBytes []byte, csrBytes []byte, err error) {
+	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
-		http.Error(w, "Invalid OCSP request format", http.StatusBadRequest)
-		return
+		return nil, nil, fmt.Errorf("failed to generate private key: %v", err)
 	}
 
-	// Parse the OCSP request
-	parsedRequest, err := ocsp.ParseRequest(ocspRequest)
-	if err != nil {
-		http.Error(w, "Failed to parse OCSP request", http.StatusBadRequest)
-		return
+	csrTemplate := &x509.CertificateRequest{
+		Subject: pkix.Name{
+			CommonName:   commonName,
+			Organization: []string{"Example Organization"},
+		},
+		SignatureAlgorithm: x509.ECDSAWithSHA256,
 	}
 
-	// Here you would normally check the certificate status (revoked, valid, etc.)
-	// For simplicity, we'll just create a "good" OCSP response
-	// Construct a sample OCSP response
-	template := ocsp.Response{
-		Status:       ocsp.Good,
-		SerialNumber: parsedRequest.SerialNumber,
-		ThisUpdate:   time.Now(),
-		NextUpdate:   time.Now().Add(24 * time.Hour),
+	csrBytes, err = x509.CreateCertificateRequest(rand.Reader, csrTemplate, privateKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create CSR: %v", err)
 	}
 
-	// Normally, you would sign the response using a real private key and certificate
-	response, err := ocsp.CreateResponse(
-		nil,           // Issuer certificate (usually a CA certificate)
-		responderCert, // Responder certificate (used to sign the OCSP response)
-		template,      // OCSP response template
-		crypto.SHA256, // Hash algorithm used for signing
-	)
+	privateKeyBytes, err = x509.MarshalECPrivateKey(privateKey)
 	if err != nil {
-		http.Error(w, "Failed to create OCSP response", http.StatusInternalServerError)
+		return nil, nil, fmt.Errorf("failed to marshal private key: %v", err)
+	}
+
+	return privateKeyBytes, csrBytes, nil
+}
+
+func createNewIdentityHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Write the OCSP response to the client
-	w.Header().Set("Content-Type", "application/ocsp-response")
-	w.Write(response)
+	// Decode the JSON request body into CreateNewIdentityRequest
+	var req CreateNewIdentityRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
 
+	// Validate the request (ensure CommonName is not empty)
+	if req.CommonName == "" {
+		http.Error(w, "CommonName is required", http.StatusBadRequest)
+		return
+	}
+
+	_, csrBytes, err := GenerateOCSPCert(req.CommonName)
+
+	csrPEM := pem.EncodeToMemory(&pem.Block{
+		Type:  "CERTIFICATE REQUEST",
+		Bytes: csrBytes,
+	})
+
+	response := CreateNewIdentityResponse{
+		CSR: string(csrPEM),
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
 }
 
 func main() {
-	http.HandleFunc("/ocsp", handleOCSPRequest)
-	log.Println("Starting OCSP Responder on :8080...")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	hostnamePrivateApi := ":8080"
 
-	// Load the responder certificate and private key
-	certPath := "path/to/responder_cert.pem"
-	keyPath := "path/to/responder_key.pem"
+	http.HandleFunc("/createnewidentity", createNewIdentityHandler)
 
-	cert, err := LoadResponderCert(certPath)
-	if err != nil {
-		log.Fatalf("Error loading responder certificate: %v", err)
-	}
-	fmt.Println("Responder certificate loaded successfully")
-
-	privateKey, err := LoadPrivateKey(keyPath)
-	if err != nil {
-		log.Fatalf("Error loading responder private key: %v", err)
-	}
-	fmt.Println("Responder private key loaded successfully")
-
+	http.ListenAndServe(hostnamePrivateApi, nil)
 }

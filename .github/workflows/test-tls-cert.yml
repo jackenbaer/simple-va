@@ -13,5 +13,5 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Test Python Service
-      run: echo "Hello"
+    - name: Golang Tests
+      run: go test -v

@@ -1,2 +1,1 @@
-certs
-gen_certs.sh
+*.pem 
