@@ -17,6 +17,12 @@ type Identity struct {
 }
 
 func (i *Identity) AddOCSPCert(cert string) {
+	for _, existingCert := range i.ocspCerts {
+		if existingCert == cert {
+			return
+		}
+	}
+
 	i.ocspCerts = append(i.ocspCerts, cert)
 }
 

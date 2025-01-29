@@ -73,6 +73,32 @@ func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type ListCertsResponse struct {
+	Certificates []string `json:"certificates"`
+}
+
+func HandleListCerts(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	certs := identity.ListOCSPCerts()
+
+	response := ListCertsResponse{
+		Certificates: certs,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	err := json.NewEncoder(w).Encode(response)
+	if err != nil {
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
+	}
+
+}
+
 type UploadSignedCertRequest struct {
 	Certificate string `json:"certificate"`
 }
@@ -132,6 +158,7 @@ func main() {
 
 	http.HandleFunc("/createnewcsr", HandleCreateNewCsr)
 	http.HandleFunc("/uploadsignedcert", HandleUploadSignedCert)
+	http.HandleFunc("/listcerts", HandleListCerts)
 
 	http.ListenAndServe(hostnamePrivateApi, nil)
 }

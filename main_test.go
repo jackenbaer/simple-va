@@ -40,7 +40,7 @@ func HandleCreateNewCsrTest() (string, error) {
 
 	// Check the status code
 	if rr.Code != http.StatusCreated {
-		return "", err
+		return "", fmt.Errorf("Status ist not Created: %v", rr.Code)
 	}
 
 	// Decode the response body
@@ -70,14 +70,36 @@ func HandleUploadSignedCertTest(certificate string) error {
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(HandleCreateNewCsr)
+	handler := http.HandlerFunc(HandleUploadSignedCert)
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
-		return err
+		return fmt.Errorf("Status ist not OK: %v", rr.Code)
 	}
 	return nil
 }
+
+func HandleListCertsTest() ([]string, error) {
+	req := httptest.NewRequest(http.MethodGet, "/listcerts", nil)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(HandleListCerts)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		return []string{}, fmt.Errorf("Status ist not OK: %v", rr.Code)
+	}
+
+	var response ListCertsResponse
+	err := json.NewDecoder(rr.Body).Decode(&response)
+	if err != nil {
+		return []string{}, err
+	}
+	return response.Certificates, nil
+}
+
 func TestCertgen(t *testing.T) {
 	identity = &Identity{}
 
@@ -108,6 +130,11 @@ func TestCertgen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to upload cert. %v", err)
 	}
+	certs, err := HandleListCertsTest()
+	if err != nil {
+		t.Fatalf("Failed to list certificates. %v", err)
+	}
+	fmt.Printf("Listed certificates: %v", certs)
 }
 
 func GenerateRootCA() ([]byte, []byte, error) {
