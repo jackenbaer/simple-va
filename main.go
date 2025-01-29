@@ -1,60 +1,35 @@
 package main
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/rand"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 )
 
-type CreateNewIdentityRequest struct {
+var identity *Identity
+
+type createNewCsrRequest struct {
 	CommonName string `json:"common_name"`
 }
 
-type CreateNewIdentityResponse struct {
+type createNewCsrResponse struct {
 	CSR string `json:"csr"`
 }
 
-func GenerateOCSPCert(commonName string) (privateKeyBytes []byte, csrBytes []byte, err error) {
-	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to generate private key: %v", err)
-	}
-
-	csrTemplate := &x509.CertificateRequest{
-		Subject: pkix.Name{
-			CommonName:   commonName,
-			Organization: []string{"Example Organization"},
-		},
-		SignatureAlgorithm: x509.ECDSAWithSHA256,
-	}
-
-	csrBytes, err = x509.CreateCertificateRequest(rand.Reader, csrTemplate, privateKey)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to create CSR: %v", err)
-	}
-
-	privateKeyBytes, err = x509.MarshalECPrivateKey(privateKey)
-	if err != nil {
-		return nil, nil, fmt.Errorf("failed to marshal private key: %v", err)
-	}
-
-	return privateKeyBytes, csrBytes, nil
-}
-
-func createNewIdentityHandler(w http.ResponseWriter, r *http.Request) {
+func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Decode the JSON request body into CreateNewIdentityRequest
-	var req CreateNewIdentityRequest
+	//Validation
+	var req createNewCsrRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
@@ -66,9 +41,17 @@ func createNewIdentityHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, csrBytes, err := GenerateOCSPCert(req.CommonName)
+	csrTemplate := &x509.CertificateRequest{
+		Subject: pkix.Name{
+			CommonName:   req.CommonName,
+			Organization: []string{"Example Organization"},
+		},
+		SignatureAlgorithm: x509.ECDSAWithSHA256,
+	}
+
+	csrBytes, err := identity.CreateCsr(csrTemplate)
 	if err != nil {
-		http.Error(w, "Cert generation failed.", http.StatusBadRequest)
+		http.Error(w, "CSR Generation Failed.", http.StatusBadRequest)
 		return
 	}
 
@@ -77,7 +60,7 @@ func createNewIdentityHandler(w http.ResponseWriter, r *http.Request) {
 		Bytes: csrBytes,
 	})
 
-	response := CreateNewIdentityResponse{
+	response := createNewCsrResponse{
 		CSR: string(csrPEM),
 	}
 
@@ -90,12 +73,65 @@ func createNewIdentityHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type UploadSignedCertRequest struct {
+	Certificate string `json:"certificate"`
+}
+
+func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	//Validation
+	var req UploadSignedCertRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return
+	}
+	identity.AddOCSPCert(req.Certificate)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Certificate uploaded successfully"))
+}
+
+func ensurePathExists(path string) error {
+	_, err := os.Stat(path)
+
+	if os.IsNotExist(err) {
+		err := os.MkdirAll(path, os.ModePerm)
+		if err != nil {
+			return fmt.Errorf("failed to create path: %w", err)
+		}
+		fmt.Println("Path created:", path)
+	} else if err != nil {
+		return fmt.Errorf("error checking path: %w", err)
+	}
+	return nil
+}
+
 func main() {
+	//Config
 	hostnamePrivateApi := ":8080"
+	identityFolder := "/tmp/"
+	//hostnamePublicApi
 
-	http.HandleFunc("/createnewidentity", createNewIdentityHandler)
+	identityFolderPath, err := filepath.Abs(identityFolder)
+	if err != nil {
+		log.Fatalf("Error getting absolute path: %v", err)
+	}
+	err = ensurePathExists(identityFolderPath)
+	if err != nil {
+		log.Fatalf("Error ensuring that path exists: %v", err)
+	}
 
-	http.HandleFunc("/uploadcertificate", createNewIdentityHandler)
+	identity = &Identity{}
+	err = identity.GetOrCreatePrivateKey(identityFolderPath)
+	if err != nil {
+		log.Fatalf("Failed to get or create private key: %v", err)
+	}
+
+	http.HandleFunc("/createnewcsr", HandleCreateNewCsr)
+	http.HandleFunc("/uploadsignedcert", HandleUploadSignedCert)
 
 	http.ListenAndServe(hostnamePrivateApi, nil)
 }

@@ -17,10 +17,9 @@ import (
 	"time"
 )
 
-// TestCreateNewIdentityHandler tests the createNewIdentityHandler function.
-func CreateNewIdentityHandler() (string, error) {
+func HandleCreateNewCsrTest() (string, error) {
 	// Define a valid request payload
-	requestBody := CreateNewIdentityRequest{
+	requestBody := createNewCsrRequest{
 		CommonName: "example.com",
 	}
 	bodyBytes, err := json.Marshal(requestBody)
@@ -36,7 +35,7 @@ func CreateNewIdentityHandler() (string, error) {
 	rr := httptest.NewRecorder()
 
 	// Call the handler
-	handler := http.HandlerFunc(createNewIdentityHandler)
+	handler := http.HandlerFunc(HandleCreateNewCsr)
 	handler.ServeHTTP(rr, req)
 
 	// Check the status code
@@ -45,7 +44,7 @@ func CreateNewIdentityHandler() (string, error) {
 	}
 
 	// Decode the response body
-	var response CreateNewIdentityResponse
+	var response createNewCsrResponse
 	err = json.NewDecoder(rr.Body).Decode(&response)
 	if err != nil {
 		return "", err
@@ -57,8 +56,37 @@ func CreateNewIdentityHandler() (string, error) {
 	}
 	return response.CSR, nil
 }
+func HandleUploadSignedCertTest(certificate string) error {
+	requestBody := UploadSignedCertRequest{
+		Certificate: certificate,
+	}
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return err
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/createnewidentity", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(HandleCreateNewCsr)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		return err
+	}
+	return nil
+}
 func TestCertgen(t *testing.T) {
-	csrPem, err := CreateNewIdentityHandler()
+	identity = &Identity{}
+
+	err := identity.GetOrCreatePrivateKey(".")
+	if err != nil {
+		t.Fatalf("Failed to initialize identity: %v", err)
+	}
+
+	csrPem, err := HandleCreateNewCsrTest()
 	if err != nil {
 		t.Fatalf("Failed to create a new identity. %v", err)
 	}
@@ -76,6 +104,10 @@ func TestCertgen(t *testing.T) {
 	}
 	fmt.Printf("Signed Cert:\n %s", csrCertPEM)
 
+	err = HandleUploadSignedCertTest(string(csrCertPEM))
+	if err != nil {
+		t.Fatalf("Failed to upload cert. %v", err)
+	}
 }
 
 func GenerateRootCA() ([]byte, []byte, error) {
