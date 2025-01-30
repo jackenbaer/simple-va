@@ -115,7 +115,11 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
 	}
-	identity.AddOCSPCert(req.Certificate)
+	err := identity.AddOCSPCert(req.Certificate)
+	if err != nil {
+		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
+		return
+	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Certificate uploaded successfully"))
 }
@@ -151,9 +155,9 @@ func main() {
 	}
 
 	identity = &Identity{FolderPath: identityFolderPath}
-	err = identity.GetOrCreatePrivateKey()
+	err = identity.Init()
 	if err != nil {
-		log.Fatalf("Failed to get or create private key: %v", err)
+		log.Fatalf("Failed to init identity %v", err)
 	}
 
 	http.HandleFunc("/createnewcsr", HandleCreateNewCsr)

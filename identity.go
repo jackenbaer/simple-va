@@ -4,9 +4,12 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha256"
 	"crypto/x509"
+	"encoding/hex"
 	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -17,15 +20,84 @@ type Identity struct {
 	ocspCerts  []string //pem encoded string
 }
 
-func (i *Identity) AddOCSPCert(cert string) {
-	for _, existingCert := range i.ocspCerts {
-		if existingCert == cert {
-			return
-		}
+func (i *Identity) Init() error {
+	err := i.getOrCreatePrivateKey()
+	if err != nil {
+		return err
+	}
+	err = i.getCerts()
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
+func (i *Identity) getCerts() error {
+	files, err := ioutil.ReadDir(i.FolderPath)
+	if err != nil {
+		return err
 	}
 
+	for _, file := range files {
+		if filepath.Ext(file.Name()) == ".pem" {
+			filePath := filepath.Join(i.FolderPath, file.Name())
+
+			// Read file contents
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return err
+			}
+
+			//make sure the list stays unique
+			for _, existingCert := range i.ocspCerts {
+				if existingCert == string(content) {
+					continue
+				}
+			}
+
+			// Append certificate content to the slice
+			i.ocspCerts = append(i.ocspCerts, string(content))
+		}
+	}
+	return nil
+}
+
+func (i *Identity) AddOCSPCert(cert string) error {
+	for _, existingCert := range i.ocspCerts {
+		if existingCert == cert {
+			return nil
+		}
+	}
 	i.ocspCerts = append(i.ocspCerts, cert)
+
+	for _, pemCert := range i.ocspCerts {
+		block, _ := pem.Decode([]byte(pemCert))
+		if block == nil {
+			return fmt.Errorf("failed to store certs to files. unable to decode pem block of a certificate")
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			return err
+		}
+
+		sha256Fingerprint := sha256.Sum256(cert.Raw)
+		fingerprintHex := hex.EncodeToString(sha256Fingerprint[:])
+
+		filename := fmt.Sprintf("%s.pem", fingerprintHex)
+		filePath := filepath.Join(filepath.Join(i.FolderPath, "certs"), filename)
+
+		err = os.MkdirAll(filepath.Join(i.FolderPath, "certs"), 0755)
+		if err != nil {
+			return err
+		}
+
+		err = os.WriteFile(filePath, []byte(pemCert), 0644)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (i *Identity) ListOCSPCerts() []string {
@@ -40,7 +112,7 @@ func (i *Identity) GetPublicKey() (*ecdsa.PublicKey, error) {
 	return &i.privateKey.PublicKey, nil
 }
 
-func (i *Identity) GetOrCreatePrivateKey() error {
+func (i *Identity) getOrCreatePrivateKey() error {
 	const privateKeyFilename = "priv.pem"
 
 	privateKeyFullpath := filepath.Join(i.FolderPath, privateKeyFilename)
