@@ -115,9 +115,14 @@ func (i *Identity) GetPublicKey() (*ecdsa.PublicKey, error) {
 func (i *Identity) getOrCreatePrivateKey() error {
 	const privateKeyFilename = "priv.pem"
 
+	err := os.MkdirAll(i.FolderPath, 0755)
+	if err != nil {
+		return err
+	}
+
 	privateKeyFullpath := filepath.Join(i.FolderPath, privateKeyFilename)
 
-	_, err := os.Stat(privateKeyFullpath)
+	_, err = os.Stat(privateKeyFullpath)
 	if err == nil {
 		data, err := os.ReadFile(privateKeyFullpath)
 		if err != nil {
