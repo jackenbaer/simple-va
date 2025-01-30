@@ -12,6 +12,7 @@ import (
 )
 
 type Identity struct {
+	FolderPath string
 	privateKey *ecdsa.PrivateKey
 	ocspCerts  []string //pem encoded string
 }
@@ -21,6 +22,7 @@ func (i *Identity) AddOCSPCert(cert string) {
 		if existingCert == cert {
 			return
 		}
+
 	}
 
 	i.ocspCerts = append(i.ocspCerts, cert)
@@ -38,10 +40,10 @@ func (i *Identity) GetPublicKey() (*ecdsa.PublicKey, error) {
 	return &i.privateKey.PublicKey, nil
 }
 
-func (i *Identity) GetOrCreatePrivateKey(identityFolder string) error {
+func (i *Identity) GetOrCreatePrivateKey() error {
 	const privateKeyFilename = "priv.pem"
 
-	privateKeyFullpath := filepath.Join(identityFolder, privateKeyFilename)
+	privateKeyFullpath := filepath.Join(i.FolderPath, privateKeyFilename)
 
 	_, err := os.Stat(privateKeyFullpath)
 	if err == nil {

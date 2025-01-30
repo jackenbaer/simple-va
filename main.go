@@ -138,7 +138,7 @@ func ensurePathExists(path string) error {
 func main() {
 	//Config
 	hostnamePrivateApi := ":8080"
-	identityFolder := "/tmp/"
+	identityFolder := "."
 	//hostnamePublicApi
 
 	identityFolderPath, err := filepath.Abs(identityFolder)
@@ -150,8 +150,8 @@ func main() {
 		log.Fatalf("Error ensuring that path exists: %v", err)
 	}
 
-	identity = &Identity{}
-	err = identity.GetOrCreatePrivateKey(identityFolderPath)
+	identity = &Identity{FolderPath: identityFolderPath}
+	err = identity.GetOrCreatePrivateKey()
 	if err != nil {
 		log.Fatalf("Failed to get or create private key: %v", err)
 	}

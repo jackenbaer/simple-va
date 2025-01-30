@@ -101,9 +101,9 @@ func HandleListCertsTest() ([]string, error) {
 }
 
 func TestCertgen(t *testing.T) {
-	identity = &Identity{}
+	identity = &Identity{FolderPath: "."}
 
-	err := identity.GetOrCreatePrivateKey(".")
+	err := identity.GetOrCreatePrivateKey()
 	if err != nil {
 		t.Fatalf("Failed to initialize identity: %v", err)
 	}
