@@ -117,6 +117,7 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	}
 	err := identity.AddOCSPCert(req.Certificate)
 	if err != nil {
+		log.Printf("%v", err) // TODO do this everythere
 		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
 		return
 	}

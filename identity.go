@@ -8,11 +8,44 @@ import (
 	"crypto/x509"
 	"encoding/hex"
 	"encoding/pem"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 )
+
+func VerifyPrivateKeyMatchesCert(cert *x509.Certificate, privateKey *ecdsa.PrivateKey) (bool, error) {
+	pub, ok := cert.PublicKey.(*ecdsa.PublicKey)
+	if !ok {
+		return false, errors.New("certificate public key is not ECDSA")
+	}
+	if pub.Curve != privateKey.PublicKey.Curve ||
+		pub.X.Cmp(privateKey.PublicKey.X) != 0 ||
+		pub.Y.Cmp(privateKey.PublicKey.Y) != 0 {
+		return false, nil
+	}
+	return true, nil
+}
+
+func isValidOCSPSigning(cert *x509.Certificate) (bool, error) {
+
+	// Check key usage
+	hasDigitalSignature := cert.KeyUsage&x509.KeyUsageDigitalSignature != 0
+	hasOCSPSigning := false
+
+	// Check extended key usage
+	for _, usage := range cert.ExtKeyUsage {
+		if usage == x509.ExtKeyUsageOCSPSigning {
+			hasOCSPSigning = true
+			break
+		}
+	}
+
+	// Return true if both conditions are met
+	return hasDigitalSignature && hasOCSPSigning, nil
+
+}
 
 type Identity struct {
 	FolderPath string
@@ -55,6 +88,31 @@ func (i *Identity) getCerts() error {
 				}
 			}
 
+			block, _ := pem.Decode([]byte(content))
+			if block == nil {
+				return fmt.Errorf("failed to store certs to files. unable to decode pem block of a certificate")
+			}
+
+			cert, err := x509.ParseCertificate(block.Bytes)
+			if err != nil {
+				return err
+			}
+			keyMatchesCert, err := VerifyPrivateKeyMatchesCert(cert, i.privateKey)
+			if err != nil {
+				return err
+			}
+			if !keyMatchesCert {
+				//TODO log
+				continue
+			}
+			ocspCert, err := isValidOCSPSigning(cert)
+			if err != nil {
+				return err
+			}
+			if !ocspCert {
+				//TODO log
+				continue
+			}
 			// Append certificate content to the slice
 			i.ocspCerts = append(i.ocspCerts, string(content))
 		}
@@ -63,6 +121,31 @@ func (i *Identity) getCerts() error {
 }
 
 func (i *Identity) AddOCSPCert(cert string) error {
+	block, _ := pem.Decode([]byte(cert))
+	if block == nil {
+		return fmt.Errorf("failed to store certs to files. unable to decode pem block of a certificate")
+	}
+
+	c, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return err
+	}
+
+	keyMatchesCert, err := VerifyPrivateKeyMatchesCert(c, i.privateKey)
+	if err != nil {
+		return err
+	}
+	if !keyMatchesCert {
+		return fmt.Errorf("Private key does not match cert")
+	}
+	ocspCert, err := isValidOCSPSigning(c)
+	if err != nil {
+		return err
+	}
+	if !ocspCert {
+		return fmt.Errorf("Cert is not usable for ocsp signing")
+	}
+
 	for _, existingCert := range i.ocspCerts {
 		if existingCert == cert {
 			return nil
