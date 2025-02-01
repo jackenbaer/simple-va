@@ -1,129 +1,21 @@
 package main
 
 import (
-	"crypto/x509"
-	"crypto/x509/pkix"
-	"encoding/json"
-	"encoding/pem"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 )
 
+var (
+	Version   = "dev"  // Default if not set at build time
+	Commit    = "none" // Default if not set
+	BuildTime = "unknown"
+)
+
 var identity *Identity
-
-type createNewCsrRequest struct {
-	CommonName string `json:"common_name"`
-}
-
-type createNewCsrResponse struct {
-	CSR string `json:"csr"`
-}
-
-func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	//Validation
-	var req createNewCsrRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
-		return
-	}
-
-	// Validate the request (ensure CommonName is not empty)
-	if req.CommonName == "" {
-		http.Error(w, "CommonName is required", http.StatusBadRequest)
-		return
-	}
-
-	csrTemplate := &x509.CertificateRequest{
-		Subject: pkix.Name{
-			CommonName:   req.CommonName,
-			Organization: []string{"Example Organization"},
-		},
-		SignatureAlgorithm: x509.ECDSAWithSHA256,
-	}
-
-	csrBytes, err := identity.CreateCsr(csrTemplate)
-	if err != nil {
-		http.Error(w, "CSR Generation Failed.", http.StatusBadRequest)
-		return
-	}
-
-	csrPEM := pem.EncodeToMemory(&pem.Block{
-		Type:  "CERTIFICATE REQUEST",
-		Bytes: csrBytes,
-	})
-
-	response := createNewCsrResponse{
-		CSR: string(csrPEM),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-}
-
-type ListCertsResponse struct {
-	Certificates []string `json:"certificates"`
-}
-
-func HandleListCerts(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	certs := identity.ListOCSPCerts()
-
-	response := ListCertsResponse{
-		Certificates: certs,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-
-}
-
-type UploadSignedCertRequest struct {
-	Certificate string `json:"certificate"`
-}
-
-func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	//Validation
-	var req UploadSignedCertRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
-		return
-	}
-	err := identity.AddOCSPCert(req.Certificate)
-	if err != nil {
-		log.Printf("%v", err) // TODO do this everythere
-		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Certificate uploaded successfully"))
-}
+var Logger *slog.Logger
 
 func ensurePathExists(path string) error {
 	_, err := os.Stat(path)
@@ -141,6 +33,15 @@ func ensurePathExists(path string) error {
 }
 
 func main() {
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+	Logger := slog.New(handler)
+
+	Logger.Info("Application started",
+		"version", Version,
+		"commit", Commit,
+		"build_time", BuildTime,
+	)
+
 	//Config
 	hostnamePrivateApi := ":8080"
 	identityFolder := "."
@@ -148,17 +49,20 @@ func main() {
 
 	identityFolderPath, err := filepath.Abs(identityFolder)
 	if err != nil {
-		log.Fatalf("Error getting absolute path: %v", err)
+		Logger.Error("Error getting absolute path", "error", err)
+		os.Exit(1)
 	}
 	err = ensurePathExists(identityFolderPath)
 	if err != nil {
-		log.Fatalf("Error ensuring that path exists: %v", err)
+		Logger.Error("Error ensuring that path exist", "error", err)
+		os.Exit(1)
 	}
 
 	identity = &Identity{FolderPath: identityFolderPath}
 	err = identity.Init()
 	if err != nil {
-		log.Fatalf("Failed to init identity %v", err)
+		Logger.Error("Failed to init identity", "error", err)
+		os.Exit(1)
 	}
 
 	http.HandleFunc("/createnewcsr", HandleCreateNewCsr)
@@ -166,4 +70,5 @@ func main() {
 	http.HandleFunc("/listcerts", HandleListCerts)
 
 	http.ListenAndServe(hostnamePrivateApi, nil)
+
 }

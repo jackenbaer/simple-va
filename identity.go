@@ -227,7 +227,8 @@ func (i *Identity) getOrCreatePrivateKey() error {
 		return err
 	}
 
-	fmt.Println("Key not found, generating a new ECDSA key...")
+	Logger.Info("Key not found, generating a new ECDSA key...")
+
 	key, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return err
