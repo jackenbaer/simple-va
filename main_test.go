@@ -10,9 +10,11 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 )
@@ -221,4 +223,12 @@ func SignCSR(caCertPEM, caKeyPEM, csrPEM []byte) ([]byte, error) {
 
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certBytes})
 	return certPEM, nil
+}
+
+func TestMain(m *testing.M) {
+	Logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	code := m.Run()
+
+	os.Exit(code)
 }
