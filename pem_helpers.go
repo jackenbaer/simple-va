@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/x509"
 	"encoding/pem"
+	"errors"
 	"fmt"
 )
 
@@ -45,4 +46,16 @@ func KeyToPEM(key *ecdsa.PrivateKey) ([]byte, error) {
 		Type:  "EC PRIVATE KEY",
 		Bytes: keyBytes,
 	}), nil
+}
+func PemToCert(pemData []byte) (*x509.Certificate, error) {
+	block, _ := pem.Decode(pemData)
+	if block == nil {
+		return nil, errors.New("failed to decode PEM block")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse certificate: %w", err)
+	}
+	return cert, nil
 }

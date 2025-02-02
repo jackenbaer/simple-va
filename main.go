@@ -15,6 +15,7 @@ var (
 	Commit    = "none" // Default if not set
 	BuildTime = "unknown"
 )
+var responderMap map[string]OCSPResponder
 
 var identity *Identity
 var Logger *slog.Logger
@@ -35,7 +36,7 @@ func ensurePathExists(path string) error {
 }
 
 func StartPublicListener(parsedPublicURL *url.URL) {
-	//http.HandleFunc("/ocsp", ocspHandler)
+	http.HandleFunc("/ocsp", HandleOcsp)
 	log.Fatal(http.ListenAndServe(parsedPublicURL.String(), nil))
 }
 
@@ -50,6 +51,10 @@ func StartPrivateListener(hostnamePrivateApi *url.URL) {
 		os.Exit(1)
 	}
 
+}
+
+func init() {
+	responderMap = make(map[string]OCSPResponder)
 }
 
 func main() {

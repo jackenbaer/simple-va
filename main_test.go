@@ -9,13 +9,18 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"log"
 	"log/slog"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"testing"
 	"time"
+
+	"golang.org/x/crypto/ocsp"
 )
 
 func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
@@ -59,9 +64,10 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	return csr, nil
 }
 
-func HandleUploadSignedCertTest(certificate *x509.Certificate) error {
+func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Certificate) error {
 	requestBody := UploadSignedCertRequest{
-		Certificate: string(CertToPEM(certificate)),
+		SignedCert: string(CertToPEM(certificate)),
+		IssuerCert: string(CertToPEM(issuer)),
 	}
 	bodyBytes, err := json.Marshal(requestBody)
 	if err != nil {
@@ -189,7 +195,7 @@ func TestCertgen(t *testing.T) {
 	}
 	fmt.Printf("OCSP Signer Certificate:\n%s\n", string(CertToPEM(ocspSignerCert)))
 
-	err = HandleUploadSignedCertTest(ocspSignerCert)
+	err = HandleUploadSignedCertTest(ocspSignerCert, rootCert)
 	if err != nil {
 		t.Fatalf("Failed to upload cert. %v", err)
 	}
@@ -198,6 +204,107 @@ func TestCertgen(t *testing.T) {
 		t.Fatalf("Failed to list certificates. %v", err)
 	}
 	fmt.Printf("Listed certificates: %v\n", certs)
+
+	//OCSP Testing
+	leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		log.Fatalf("failed to generate private key: %v", err)
+	}
+
+	leafCertTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject: pkix.Name{
+			CommonName:   "Leaf Certificate",
+			Organization: []string{"Example Org"},
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(365 * 24 * time.Hour), // Valid for 1 year
+		KeyUsage:    x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		// Set the OCSP endpoint URL:
+		OCSPServer: []string{"http://localhost:8081/ocsp"},
+	}
+	certDER, err := x509.CreateCertificate(rand.Reader, leafCertTemplate, rootCert, &leafKey.PublicKey, rootKey)
+	if err != nil {
+		t.Fatalf("failed to sign certificate: %v", err)
+	}
+
+	// Parse the DER-encoded certificate into an *x509.Certificate.
+	signedLeafCert, err := x509.ParseCertificate(certDER)
+	if err != nil {
+		t.Fatalf("failed to parse signed certificate: %v", err)
+	}
+	fmt.Printf("Leaf Certificate:\n%s\n", CertToPEM(signedLeafCert))
+	ocspReqDER, err := ocsp.CreateRequest(signedLeafCert, rootCert, nil)
+	if err != nil {
+		t.Fatalf("failed to create OCSP request: %v", err)
+	}
+	fmt.Printf("OCSP Request (DER in hex):\n%x\n", ocspReqDER)
+
+	// Get the responder URL from the leaf certificate.
+	if len(signedLeafCert.OCSPServer) == 0 {
+		t.Fatalf("no OCSP server URL in leaf certificate")
+	}
+	ocspURL := signedLeafCert.OCSPServer[0]
+	fmt.Printf("OCSP Responder URL: %s\n", ocspURL)
+
+	server := httptest.NewServer(http.HandlerFunc(HandleOcsp))
+	defer server.Close()
+
+	// Create an OCSP request using the leaf and issuer certificates.
+	ocspReqDER, err = ocsp.CreateRequest(signedLeafCert, rootCert, nil)
+	if err != nil {
+		t.Fatalf("failed to create OCSP request: %v", err)
+	}
+
+	// Send the OCSP request to our test server.
+	resp, err := http.Post(server.URL, "application/ocsp-request", bytes.NewReader(ocspReqDER))
+	if err != nil {
+		t.Fatalf("failed to send OCSP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verify the Content-Type of the response.
+	if ct := resp.Header.Get("Content-Type"); ct != "application/ocsp-response" {
+		t.Fatalf("unexpected content type: %s", ct)
+	}
+
+	// Read the binary OCSP response.
+	ocspRespDER, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read OCSP response: %v", err)
+	}
+	ocspResp, err := ocsp.ParseResponse(ocspRespDER, nil)
+	if err != nil {
+		t.Fatalf("failed to parse OCSP response: %v", err)
+	}
+
+	// Log the raw binary response in hexadecimal.
+	fmt.Println("OCSP Response Status:", ocspResp.Status)
+	fmt.Println("This Update:", ocspResp.ThisUpdate)
+	fmt.Println("Next Update:", ocspResp.NextUpdate)
+	fmt.Println("Produced At:", ocspResp.ProducedAt)
+}
+
+func OCSPCerts() ([]string, error) {
+	req := httptest.NewRequest(http.MethodGet, "/listcerts", nil)
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(HandleListCerts)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusCreated {
+		return []string{}, fmt.Errorf("Status ist not OK: %v", rr.Code)
+	}
+
+	var response ListCertsResponse
+	err := json.NewDecoder(rr.Body).Decode(&response)
+	if err != nil {
+		return []string{}, err
+	}
+	return response.Certificates, nil
 }
 
 func TestMain(m *testing.M) {
@@ -212,6 +319,14 @@ func TestMain(m *testing.M) {
 	}
 
 	code := m.Run()
+
+	parsedPublicURL, err := url.Parse("localhost:8081")
+	if err != nil {
+		Logger.Error("Failed to parse URL", "error", err)
+		os.Exit(1)
+	}
+
+	go StartPublicListener(parsedPublicURL)
 
 	os.Exit(code)
 }

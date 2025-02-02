@@ -1,10 +1,14 @@
 package main
 
 import (
+	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/hex"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"net/http"
 )
 
@@ -13,7 +17,8 @@ type ListCertsResponse struct {
 }
 
 type UploadSignedCertRequest struct {
-	Certificate string `json:"certificate"`
+	SignedCert string `json:"signed_certificate"`
+	IssuerCert string `json:"issuer_certificate`
 }
 
 func HandleListCerts(w http.ResponseWriter, r *http.Request) {
@@ -47,6 +52,20 @@ func HandleListCerts(w http.ResponseWriter, r *http.Request) {
 
 }
 
+type subjectPublicKeyInfo struct {
+	Algorithm        asn1.RawValue // Wir benötigen hier den AlgorithmIdentifier nicht weiter.
+	SubjectPublicKey asn1.BitString
+}
+
+func computeIssuerKeyHash(issuerCert *x509.Certificate) (string, error) {
+	var spki subjectPublicKeyInfo
+	if _, err := asn1.Unmarshal(issuerCert.RawSubjectPublicKeyInfo, &spki); err != nil {
+		return "", fmt.Errorf("failed to unmarshal subjectPublicKeyInfo: %w", err)
+	}
+	hash := sha1.Sum(spki.SubjectPublicKey.Bytes)
+	return hex.EncodeToString(hash[:]), nil
+}
+
 func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		Logger.Debug("Rejected request due to invalid HTTP method",
@@ -72,13 +91,45 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
 		return
 	}
-	err := identity.AddOCSPCert(req.Certificate)
+	err := identity.AddOCSPCert(req.SignedCert)
 	if err != nil {
 		Logger.Error("Failed to add OCSP cert",
 			"error", err,
 		)
 		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
 		return
+	}
+	ocspCert, err := PemToCert([]byte(req.SignedCert))
+	if err != nil {
+		Logger.Error("failed to parse ocsp certificate",
+			"error", err,
+		)
+		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
+		return
+	}
+
+	issuerCert, err := PemToCert([]byte(req.IssuerCert))
+	if err != nil {
+		Logger.Error("failed to parse issuer certificate",
+			"error", err,
+		)
+		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
+		return
+	}
+
+	hashstring, err := computeIssuerKeyHash(issuerCert)
+	if err != nil {
+		Logger.Error("failed to parse issuer certificate",
+			"error", err,
+		)
+		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
+		return
+	}
+	fmt.Printf("hhhash: %s\n", hashstring)
+
+	responderMap[hashstring] = OCSPResponder{
+		OcspCert:   ocspCert,
+		IssuerCert: issuerCert,
 	}
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Certificate uploaded successfully"))

@@ -47,10 +47,20 @@ func isValidOCSPSigning(cert *x509.Certificate) (bool, error) {
 
 }
 
+type OCSPResponder struct {
+	OcspCert   *x509.Certificate
+	IssuerCert *x509.Certificate
+}
+
 type Identity struct {
 	FolderPath string
 	privateKey *ecdsa.PrivateKey
 	ocspCerts  []string //pem encoded string
+}
+
+// TODO Remove this
+func (i *Identity) GetPrivateKey() *ecdsa.PrivateKey {
+	return i.privateKey
 }
 
 func (i *Identity) Init() error {
