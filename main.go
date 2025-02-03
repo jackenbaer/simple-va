@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -17,21 +16,6 @@ var responderMap map[string]OCSPResponder
 var identity *Identity
 var Logger *slog.Logger
 var Config *Configuration
-
-func ensurePathExists(path string) error {
-	_, err := os.Stat(path)
-
-	if os.IsNotExist(err) {
-		err := os.MkdirAll(path, os.ModePerm)
-		if err != nil {
-			return fmt.Errorf("failed to create path: %w", err)
-		}
-		fmt.Println("Path created:", path)
-	} else if err != nil {
-		return fmt.Errorf("error checking path: %w", err)
-	}
-	return nil
-}
 
 func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
@@ -57,9 +41,15 @@ func init() {
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
 	Config.LoadFromFile("./config.ini")
+	err := Config.Validate()
+	if err != nil {
+		Logger.Error("Failed to validate configuration", "error", err)
+		os.Exit(1)
+	}
+
 	responderMap = make(map[string]OCSPResponder)
 	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath, CertsFolderPath: Config.CertsFolderPath}
-	err := identity.Init()
+	err = identity.Init()
 	if err != nil {
 		Logger.Error("Failed to init identity", "error", err)
 		os.Exit(1)

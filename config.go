@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/url"
+	"os"
 	"path/filepath"
 
 	"gopkg.in/ini.v1"
@@ -32,30 +34,21 @@ func (c *Configuration) LoadFromFile(f string) error {
 }
 
 func (c *Configuration) Validate() error {
+	_, err := url.Parse(Config.HostnamePrivateApi)
+	if err != nil {
+		return err
+	}
+	_, err = url.Parse(Config.HostnamePublicApi)
+	if err != nil {
+		return err
+	}
+	_, err = os.Stat(Config.PrivateKeyPath)
+	if os.IsNotExist(err) {
+		return err
+	}
+	_, err = os.Stat(Config.CertsFolderPath)
+	if os.IsNotExist(err) {
+		return err
+	}
 	return nil
 }
-
-/*
-parsedPrivateURL, err := url.Parse(hostnamePrivateApi)
-if err != nil {
-	Logger.Error("Failed to parse URL", "error", err)
-	os.Exit(1)
-}
-parsedPublicURL, err := url.Parse(hostnamePublicApi)
-if err != nil {
-	Logger.Error("Failed to parse URL", "error", err)
-	os.Exit(1)
-}
-identityFolderPath, err := filepath.Abs(identityFolder)
-if err != nil {
-	Logger.Error("Error getting absolute path", "error", err)
-	os.Exit(1)
-}
-//
-
-err = ensurePathExists(identityFolderPath)
-if err != nil {
-	Logger.Error("Error ensuring that path exist", "error", err)
-	os.Exit(1)
-}
-*/
