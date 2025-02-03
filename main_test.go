@@ -308,6 +308,10 @@ func OCSPCerts() ([]string, error) {
 
 func TestMain(m *testing.M) {
 	Logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	err := os.MkdirAll(Config.CertsFolderPath, os.ModePerm)
+	if err != nil {
+		log.Fatalf("Failed to create test folder  %v", err)
+	}
 
 	code := m.Run()
 

@@ -1,5 +1,4 @@
 *.pem 
 identityFolders
 *.env
-*.ini
 simple-va
