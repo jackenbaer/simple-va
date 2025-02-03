@@ -53,9 +53,10 @@ type OCSPResponder struct {
 }
 
 type Identity struct {
-	FolderPath string
-	privateKey *ecdsa.PrivateKey
-	ocspCerts  []string //pem encoded string
+	PrivateKeyPath  string
+	CertsFolderPath string
+	privateKey      *ecdsa.PrivateKey
+	ocspCerts       []string //pem encoded string
 }
 
 // TODO Remove this
@@ -76,19 +77,23 @@ func (i *Identity) Init() error {
 }
 
 func (i *Identity) getCerts() error {
-	files, err := ioutil.ReadDir(i.FolderPath)
+	files, err := ioutil.ReadDir(i.CertsFolderPath)
 	if err != nil {
 		return err
 	}
 
 	for _, file := range files {
 		if filepath.Ext(file.Name()) == ".pem" {
-			filePath := filepath.Join(i.FolderPath, file.Name())
+			filePath := filepath.Join(i.CertsFolderPath, file.Name())
 
 			// Read file contents
 			content, err := os.ReadFile(filePath)
 			if err != nil {
 				return err
+			}
+			if len(content) == 0 {
+				Logger.Warn("Skipping empty certificate file", "file", filePath)
+				continue
 			}
 
 			//make sure the list stays unique
@@ -112,7 +117,7 @@ func (i *Identity) getCerts() error {
 				return err
 			}
 			if !keyMatchesCert {
-				//TODO log
+				Logger.Error("Key does not match cert")
 				continue
 			}
 			ocspCert, err := isValidOCSPSigning(cert)
@@ -120,10 +125,9 @@ func (i *Identity) getCerts() error {
 				return err
 			}
 			if !ocspCert {
-				//TODO log
+				Logger.Error("Not an OCSP Certificate")
 				continue
 			}
-			// Append certificate content to the slice
 			i.ocspCerts = append(i.ocspCerts, string(content))
 		}
 	}
@@ -178,9 +182,9 @@ func (i *Identity) AddOCSPCert(cert string) error {
 		fingerprintHex := hex.EncodeToString(sha256Fingerprint[:])
 
 		filename := fmt.Sprintf("%s.pem", fingerprintHex)
-		filePath := filepath.Join(filepath.Join(i.FolderPath, "certs"), filename)
+		filePath := filepath.Join(i.CertsFolderPath, filename)
 
-		err = os.MkdirAll(filepath.Join(i.FolderPath, "certs"), 0755)
+		err = os.MkdirAll(i.CertsFolderPath, 0755)
 		if err != nil {
 			return err
 		}
@@ -206,16 +210,10 @@ func (i *Identity) GetPublicKey() (*ecdsa.PublicKey, error) {
 }
 
 func (i *Identity) getOrCreatePrivateKey() error {
-	const privateKeyFilename = "priv.pem"
 
-	err := os.MkdirAll(i.FolderPath, 0755)
-	if err != nil {
-		return err
-	}
+	privateKeyFullpath := i.PrivateKeyPath
 
-	privateKeyFullpath := filepath.Join(i.FolderPath, privateKeyFilename)
-
-	_, err = os.Stat(privateKeyFullpath)
+	_, err := os.Stat(privateKeyFullpath)
 	if err == nil {
 		data, err := os.ReadFile(privateKeyFullpath)
 		if err != nil {

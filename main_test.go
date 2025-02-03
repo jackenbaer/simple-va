@@ -15,7 +15,6 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"testing"
 	"time"
@@ -310,23 +309,9 @@ func OCSPCerts() ([]string, error) {
 func TestMain(m *testing.M) {
 	Logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
-	identity = &Identity{FolderPath: "./identityFolder/"}
-
-	err := identity.getOrCreatePrivateKey()
-	if err != nil {
-		fmt.Printf("Failed to initialize identity: %v", err)
-		os.Exit(1)
-	}
-
 	code := m.Run()
 
-	parsedPublicURL, err := url.Parse("localhost:8081")
-	if err != nil {
-		Logger.Error("Failed to parse URL", "error", err)
-		os.Exit(1)
-	}
-
-	go StartPublicListener(parsedPublicURL)
+	go StartPublicListener()
 
 	os.Exit(code)
 }

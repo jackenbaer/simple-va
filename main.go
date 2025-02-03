@@ -5,9 +5,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
-	"path/filepath"
 )
 
 var (
@@ -16,9 +14,9 @@ var (
 	BuildTime = "unknown"
 )
 var responderMap map[string]OCSPResponder
-
 var identity *Identity
 var Logger *slog.Logger
+var Config *Configuration
 
 func ensurePathExists(path string) error {
 	_, err := os.Stat(path)
@@ -35,17 +33,17 @@ func ensurePathExists(path string) error {
 	return nil
 }
 
-func StartPublicListener(parsedPublicURL *url.URL) {
+func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
-	log.Fatal(http.ListenAndServe(parsedPublicURL.String(), nil))
+	log.Fatal(http.ListenAndServe(Config.HostnamePrivateApi, nil))
 }
 
-func StartPrivateListener(hostnamePrivateApi *url.URL) {
+func StartPrivateListener() {
 	http.HandleFunc("/createnewcsr", HandleCreateNewCsr)
 	http.HandleFunc("/uploadsignedcert", HandleUploadSignedCert)
 	http.HandleFunc("/listcerts", HandleListCerts)
 
-	err := http.ListenAndServe(hostnamePrivateApi.String(), nil)
+	err := http.ListenAndServe(Config.HostnamePublicApi, nil)
 	if err != nil {
 		Logger.Error("Error starting private API listener")
 		os.Exit(1)
@@ -54,55 +52,23 @@ func StartPrivateListener(hostnamePrivateApi *url.URL) {
 }
 
 func init() {
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo, AddSource: true})
+	Logger = slog.New(handler)
+	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
+
+	Config.LoadFromFile("./config.ini")
 	responderMap = make(map[string]OCSPResponder)
-}
-
-func main() {
-	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
-	Logger := slog.New(handler)
-
-	Logger.Info("Application started",
-		"version", Version,
-		"commit", Commit,
-		"build_time", BuildTime,
-	)
-
-	//Config
-	hostnamePrivateApi := "localhost:8080"
-	hostnamePublicApi := "localhost:8081"
-	identityFolder := "."
-
-	//Check Config
-	parsedPrivateURL, err := url.Parse(hostnamePrivateApi)
-	if err != nil {
-		Logger.Error("Failed to parse URL", "error", err)
-		os.Exit(1)
-	}
-	parsedPublicURL, err := url.Parse(hostnamePublicApi)
-	if err != nil {
-		Logger.Error("Failed to parse URL", "error", err)
-		os.Exit(1)
-	}
-	identityFolderPath, err := filepath.Abs(identityFolder)
-	if err != nil {
-		Logger.Error("Error getting absolute path", "error", err)
-		os.Exit(1)
-	}
-	//
-
-	err = ensurePathExists(identityFolderPath)
-	if err != nil {
-		Logger.Error("Error ensuring that path exist", "error", err)
-		os.Exit(1)
-	}
-
-	identity = &Identity{FolderPath: identityFolderPath}
-	err = identity.Init()
+	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath, CertsFolderPath: Config.CertsFolderPath}
+	err := identity.Init()
 	if err != nil {
 		Logger.Error("Failed to init identity", "error", err)
 		os.Exit(1)
 	}
 
-	go StartPrivateListener(parsedPrivateURL)
-	go StartPublicListener(parsedPublicURL)
+}
+
+func main() {
+
+	go StartPrivateListener()
+	go StartPublicListener()
 }
