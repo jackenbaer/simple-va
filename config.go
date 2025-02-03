@@ -42,7 +42,7 @@ func (c *Configuration) Validate() error {
 	if err != nil {
 		return err
 	}
-	_, err = os.Stat(Config.PrivateKeyPath)
+	_, err = os.Stat(filepath.Dir(Config.PrivateKeyPath))
 	if os.IsNotExist(err) {
 		return err
 	}
