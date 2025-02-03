@@ -307,11 +307,16 @@ func OCSPCerts() ([]string, error) {
 }
 
 func TestMain(m *testing.M) {
+
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
 	Config.LoadFromFile("./config.ini")
+	err := os.MkdirAll(Config.CertsFolderPath, os.ModePerm)
+	if err != nil {
+		log.Fatalf("Failed to create test folder  %v", err)
+	}
 	err := Config.Validate()
 	if err != nil {
 		Logger.Error("Failed to validate configuration", "error", err)
