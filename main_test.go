@@ -317,7 +317,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Failed to create test folder  %v", err)
 	}
-	err := Config.Validate()
+	err = Config.Validate()
 	if err != nil {
 		Logger.Error("Failed to validate configuration", "error", err)
 		os.Exit(1)
