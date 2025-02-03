@@ -35,7 +35,7 @@ func StartPrivateListener() {
 
 }
 
-func init() {
+func main() {
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
@@ -54,10 +54,6 @@ func init() {
 		Logger.Error("Failed to init identity", "error", err)
 		os.Exit(1)
 	}
-
-}
-
-func main() {
 
 	go StartPrivateListener()
 	go StartPublicListener()

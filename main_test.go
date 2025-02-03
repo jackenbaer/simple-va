@@ -307,10 +307,23 @@ func OCSPCerts() ([]string, error) {
 }
 
 func TestMain(m *testing.M) {
-	Logger = slog.New(slog.NewJSONHandler(os.Stdout, nil))
-	err := os.MkdirAll(Config.CertsFolderPath, os.ModePerm)
+	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
+	Logger = slog.New(handler)
+	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
+
+	Config.LoadFromFile("./config.ini")
+	err := Config.Validate()
 	if err != nil {
-		log.Fatalf("Failed to create test folder  %v", err)
+		Logger.Error("Failed to validate configuration", "error", err)
+		os.Exit(1)
+	}
+
+	responderMap = make(map[string]OCSPResponder)
+	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath, CertsFolderPath: Config.CertsFolderPath}
+	err = identity.Init()
+	if err != nil {
+		Logger.Error("Failed to init identity", "error", err)
+		os.Exit(1)
 	}
 
 	code := m.Run()
