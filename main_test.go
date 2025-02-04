@@ -44,7 +44,7 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	handler.ServeHTTP(rr, req)
 
 	// Check the status code
-	if rr.Code != http.StatusCreated {
+	if rr.Code != http.StatusOK {
 		return nil, fmt.Errorf("Status ist not Created: %v", rr.Code)
 	}
 
@@ -96,7 +96,7 @@ func HandleListCertsTest() ([]string, error) {
 	handler := http.HandlerFunc(HandleListCerts)
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusCreated {
+	if rr.Code != http.StatusOK {
 		return []string{}, fmt.Errorf("Status ist not OK: %v", rr.Code)
 	}
 
@@ -294,7 +294,7 @@ func OCSPCerts() ([]string, error) {
 	handler := http.HandlerFunc(HandleListCerts)
 	handler.ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusCreated {
+	if rr.Code != http.StatusOK {
 		return []string{}, fmt.Errorf("Status ist not OK: %v", rr.Code)
 	}
 

@@ -12,6 +12,47 @@ import (
 	"net/http"
 )
 
+// Unified method validator
+func validateMethod(w http.ResponseWriter, r *http.Request, expectedMethod string) bool {
+	if r.Method != expectedMethod {
+		Logger.Debug("Rejected request due to invalid HTTP method",
+			"received_method", r.Method,
+			"expected_method", expectedMethod,
+			"endpoint", r.URL.Path,
+		)
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return false
+	}
+	return true
+}
+
+// Unified request decoder
+func decodeJSONRequest(w http.ResponseWriter, r *http.Request, v interface{}) bool {
+	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
+		Logger.Warn("Invalid JSON body",
+			"error", err,
+			"status", http.StatusBadRequest,
+			"endpoint", r.URL.Path,
+			"client_ip", r.RemoteAddr,
+		)
+		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+		return false
+	}
+	return true
+}
+
+// Unified response writer
+func writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(statusCode)
+	if err := json.NewEncoder(w).Encode(data); err != nil {
+		Logger.Error("Failed to encode response",
+			"error", err,
+		)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
+}
+
 type ListCertsResponse struct {
 	Certificates []string `json:"certificates"`
 }
@@ -22,34 +63,11 @@ type UploadSignedCertRequest struct {
 }
 
 func HandleListCerts(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		Logger.Debug("Rejected request due to invalid HTTP method",
-			"received_method", r.Method,
-			"expected_method", http.MethodGet,
-			"endpoint", r.URL.Path,
-		)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if !validateMethod(w, r, http.MethodGet) {
 		return
 	}
-
 	certs := identity.ListOCSPCerts()
-
-	response := ListCertsResponse{
-		Certificates: certs,
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	err := json.NewEncoder(w).Encode(response)
-	if err != nil {
-		Logger.Error("Failed to encode response",
-			"error", err,
-		)
-
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
-
+	writeJSONResponse(w, http.StatusOK, ListCertsResponse{Certificates: certs})
 }
 
 type subjectPublicKeyInfo struct {
@@ -67,30 +85,16 @@ func computeIssuerKeyHash(issuerCert *x509.Certificate) (string, error) {
 }
 
 func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		Logger.Debug("Rejected request due to invalid HTTP method",
-			"received_method", r.Method,
-			"expected_method", http.MethodGet,
-			"endpoint", r.URL.Path,
-		)
-
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
 
 	//Validation
 	var req UploadSignedCertRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		Logger.Warn("Invalid JSON body",
-			"error", err,
-			"status", http.StatusBadRequest,
-			"endpoint", r.URL.Path,
-			"client_ip", r.RemoteAddr,
-		)
-
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+	if !decodeJSONRequest(w, r, &req) {
 		return
 	}
+
 	err := identity.AddOCSPCert(req.SignedCert)
 	if err != nil {
 		Logger.Error("Failed to add OCSP cert",
@@ -144,26 +148,13 @@ type createNewCsrResponse struct {
 }
 
 func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		Logger.Debug("Rejected request due to invalid HTTP method",
-			"received_method", r.Method,
-			"expected_method", http.MethodGet,
-			"endpoint", r.URL.Path,
-		)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
 
 	//Validation
 	var req createNewCsrRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		Logger.Warn("Invalid JSON body",
-			"error", err,
-			"status", http.StatusBadRequest,
-			"endpoint", r.URL.Path,
-			"client_ip", r.RemoteAddr,
-		)
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
+	if !decodeJSONRequest(w, r, &req) {
 		return
 	}
 
@@ -202,18 +193,5 @@ func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
 		Bytes: csrBytes,
 	})
 
-	response := createNewCsrResponse{
-		CSR: string(csrPEM),
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	err = json.NewEncoder(w).Encode(response)
-	if err != nil {
-		Logger.Error("Failed to encode response",
-			"error", err,
-		)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-		return
-	}
+	writeJSONResponse(w, http.StatusOK, createNewCsrResponse{CSR: string(csrPEM)})
 }
