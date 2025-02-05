@@ -65,5 +65,3 @@ jobs:
         with:
           name: simple-va
           path: ./simple-va
-
-					
