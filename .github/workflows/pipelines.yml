@@ -94,7 +94,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ./simple-va-*
+          files: simple-va-${{ matrix.os }}-${{ matrix.arch }}
           tag_name: ${{ github.ref_name }}
           name: "Release ${{ github.ref_name }}"
           draft: false
