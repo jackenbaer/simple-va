@@ -82,7 +82,7 @@ jobs:
       matrix:
         os: [linux, darwin, windows]
         arch: [amd64, arm64]
-				
+
     steps:
       - name: Download Built Binary
         uses: actions/download-artifact@v4
