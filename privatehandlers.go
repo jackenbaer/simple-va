@@ -6,69 +6,10 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/pem"
 	"fmt"
 	"net/http"
 )
-
-// Unified method validator
-func validateMethod(w http.ResponseWriter, r *http.Request, expectedMethod string) bool {
-	if r.Method != expectedMethod {
-		Logger.Debug("Rejected request due to invalid HTTP method",
-			"received_method", r.Method,
-			"expected_method", expectedMethod,
-			"endpoint", r.URL.Path,
-		)
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return false
-	}
-	return true
-}
-
-// Unified request decoder
-func decodeJSONRequest(w http.ResponseWriter, r *http.Request, v interface{}) bool {
-	if err := json.NewDecoder(r.Body).Decode(v); err != nil {
-		Logger.Warn("Invalid JSON body",
-			"error", err,
-			"status", http.StatusBadRequest,
-			"endpoint", r.URL.Path,
-			"client_ip", r.RemoteAddr,
-		)
-		http.Error(w, "Invalid JSON body", http.StatusBadRequest)
-		return false
-	}
-	return true
-}
-
-// Unified response writer
-func writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(statusCode)
-	if err := json.NewEncoder(w).Encode(data); err != nil {
-		Logger.Error("Failed to encode response",
-			"error", err,
-		)
-		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	}
-}
-
-type ListCertsResponse struct {
-	Certificates []string `json:"certificates"`
-}
-
-type UploadSignedCertRequest struct {
-	SignedCert string `json:"signed_certificate"`
-	IssuerCert string `json:"issuer_certificate`
-}
-
-func HandleListCerts(w http.ResponseWriter, r *http.Request) {
-	if !validateMethod(w, r, http.MethodGet) {
-		return
-	}
-	certs := identity.ListOCSPCerts()
-	writeJSONResponse(w, http.StatusOK, ListCertsResponse{Certificates: certs})
-}
 
 type subjectPublicKeyInfo struct {
 	Algorithm        asn1.RawValue // Wir benötigen hier den AlgorithmIdentifier nicht weiter.
@@ -82,6 +23,24 @@ func computeIssuerKeyHash(issuerCert *x509.Certificate) (string, error) {
 	}
 	hash := sha1.Sum(spki.SubjectPublicKey.Bytes)
 	return hex.EncodeToString(hash[:]), nil
+}
+
+type ListCertsResponse struct {
+	Certificates []string `json:"certificates"`
+}
+
+func HandleListCerts(w http.ResponseWriter, r *http.Request) {
+	if !validateMethod(w, r, http.MethodGet) {
+		return
+	}
+	certs := identity.ListOCSPCerts()
+	writeJSONResponse(w, http.StatusOK, ListCertsResponse{Certificates: certs})
+}
+
+type UploadSignedCertRequest struct {
+	SignedCert string `json:"signed_certificate"`
+
+	IssuerCert string `json:"issuer_certificate"`
 }
 
 func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
