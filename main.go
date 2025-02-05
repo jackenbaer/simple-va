@@ -9,8 +9,11 @@ import (
 	"os"
 )
 
+// Default if not set at build time
 var (
-	Version = "dev" // Default if not set at build time
+	Version   = "dev"
+	Commit    = "none"
+	BuildTime = "unknown"
 )
 var responderMap map[string]OCSPResponder
 var identity *Identity
