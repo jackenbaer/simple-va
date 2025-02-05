@@ -1,6 +1,8 @@
 package main
 
 import (
+	"flag"
+	"fmt"
 	"log"
 	"log/slog"
 	"net/http"
@@ -8,9 +10,7 @@ import (
 )
 
 var (
-	Version   = "dev"  // Default if not set at build time
-	Commit    = "none" // Default if not set
-	BuildTime = "unknown"
+	Version = "dev" // Default if not set at build time
 )
 var responderMap map[string]OCSPResponder
 var identity *Identity
@@ -37,6 +37,14 @@ func StartPrivateListener() {
 }
 
 func main() {
+	versionFlag := flag.Bool("version", false, "Print the version of the binary")
+	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("%s", Version)
+		os.Exit(0)
+	}
+
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
