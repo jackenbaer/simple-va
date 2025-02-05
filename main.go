@@ -16,6 +16,7 @@ var responderMap map[string]OCSPResponder
 var identity *Identity
 var Logger *slog.Logger
 var Config *Configuration
+var OCSPDb *OCSPDatabase
 
 func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
