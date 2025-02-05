@@ -58,7 +58,7 @@ jobs:
 
       - name: Build Binary with Version Injection
         run: |
-          go build -ldflags "-X 'main.Version=${VERSION}' -X 'main.Commit=${COMMIT}' -X 'main.BuildTime=${BUILD_TIME}'" -o simple-va . 
+          go build -ldflags "-X 'main.Version=${VERSION}' -X 'main.Commit=${COMMIT}' -X 'main.BuildTime=${BUILD_TIME}'" -o simple-va .  
 
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
