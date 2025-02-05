@@ -83,12 +83,12 @@ jobs:
       - name: Download All Artifacts
         uses: actions/download-artifact@v4
         with:
-          path: ./artifacts  # All artifacts will be stored here
+          path: release_artifacts
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ./artifacts/*  # Include all downloaded binaries
+          files: release_artifacts/**  
           tag_name: ${{ github.ref_name }}
           name: "Release ${{ github.ref_name }}"
           draft: false
