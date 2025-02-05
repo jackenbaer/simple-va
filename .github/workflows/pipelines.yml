@@ -70,9 +70,8 @@ jobs:
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
         with:
-          name: binaries
-          path: ./simple-va-* 
-
+          name: simple-va-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./simple-va-${{ matrix.os }}-${{ matrix.arch }}*
 
   release:
     name: Create GitHub Release
