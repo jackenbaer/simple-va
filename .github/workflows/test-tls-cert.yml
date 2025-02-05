@@ -1,4 +1,4 @@
-name: Test TLS Certificate with Python Service
+name: Test simple-va
 
 on:
   push:
@@ -10,8 +10,22 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
-    - name: Golang Tests
-      run: go test -v
+      - name: Golang Tests
+        run: go test -v
+
+  vulncheck:
+    name: Run govulncheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: '1.22.3'
+          go-package: './...'
