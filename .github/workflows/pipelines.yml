@@ -3,7 +3,7 @@ name: Test simple-va
 on:
   push:
     branches:
-      - main 
+      - main
     tags:
       - "v*.*.*"  
   pull_request:
