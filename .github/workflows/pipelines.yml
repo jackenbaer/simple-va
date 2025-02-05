@@ -39,7 +39,7 @@ jobs:
   build:
     name: Build and Inject Version
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')  # Only build on version tags
+    if: startsWith(github.ref, 'refs/tags/') 
 
     steps:
       - name: Checkout repository
@@ -65,3 +65,5 @@ jobs:
         with:
           name: simple-va
           path: ./simple-va
+
+					
