@@ -54,7 +54,7 @@ func HandleOcsp(w http.ResponseWriter, r *http.Request) {
 	fmt.Printf("hash: %s\n", k)
 
 	// Check if the key exists
-	if value, exists := responderMap[k]; exists {
+	if value, exists := ocspCertManager.responders[k]; exists {
 		fmt.Println("Key exists! Value:", value)
 		issuerCert := value.IssuerCert
 		responderCert := value.OcspCert

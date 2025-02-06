@@ -15,8 +15,8 @@ var (
 	Commit    = "none"
 	BuildTime = "unknown"
 )
-var responderMap map[string]OCSPResponder
 var identity *Identity
+var ocspCertManager *OCSPCertManager
 var Logger *slog.Logger
 var Config *Configuration
 var OCSPDb *OCSPDatabase
@@ -47,7 +47,6 @@ func main() {
 		fmt.Printf("%s", Version)
 		os.Exit(0)
 	}
-
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
@@ -59,11 +58,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	responderMap = make(map[string]OCSPResponder)
-	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath, CertsFolderPath: Config.CertsFolderPath}
+	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath}
 	err = identity.Init()
 	if err != nil {
 		Logger.Error("Failed to init identity", "error", err)
+		os.Exit(1)
+	}
+
+	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
+
+	err = ocspCertManager.Init()
+	if err != nil {
+		Logger.Error("Failed to init ocsp certificate manager", "error", err)
 		os.Exit(1)
 	}
 

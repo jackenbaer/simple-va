@@ -323,11 +323,17 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	responderMap = make(map[string]OCSPResponder)
-	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath, CertsFolderPath: Config.CertsFolderPath}
+	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath}
 	err = identity.Init()
 	if err != nil {
 		Logger.Error("Failed to init identity", "error", err)
+		os.Exit(1)
+	}
+
+	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
+	err = ocspCertManager.Init()
+	if err != nil {
+		Logger.Error("Failed to init ocsp certificate manager", "error", err)
 		os.Exit(1)
 	}
 
