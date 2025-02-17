@@ -155,6 +155,14 @@ func (o *OCSPCertManager) ListOCSPCerts() []OCSPResponder {
 	return r
 }
 
+func (o *OCSPCertManager) RemoveResponder(issuerKeyHash string) error {
+	if _, exists := o.responders[issuerKeyHash]; !exists {
+		return fmt.Errorf("key %q does not exist", issuerKeyHash)
+	}
+	delete(o.responders, issuerKeyHash)
+	return nil
+}
+
 func (o *OCSPCertManager) AddResponder(r OCSPResponder) error {
 	issuerHashString, err := r.ComputeIssuerKeyHash()
 	if err != nil {

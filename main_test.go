@@ -8,6 +8,7 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -61,6 +62,63 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	}
 
 	return csr, nil
+}
+
+func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Certificate, caKey *ecdsa.PrivateKey) error {
+	revokedEntry := pkix.RevokedCertificate{
+		SerialNumber:   certToRevoke.SerialNumber,
+		RevocationTime: time.Now(),
+		// Optionally, add CRLReason extensions here.
+	}
+	revokedCerts := []pkix.RevokedCertificate{revokedEntry}
+
+	now := time.Now()
+	nextUpdate := now.Add(7 * 24 * time.Hour) // CRL valid for 7 days
+
+	// Create the RevocationList structure.
+	crlList := &x509.RevocationList{
+		SignatureAlgorithm:  x509.SHA256WithRSA,
+		RevokedCertificates: revokedCerts,
+		ThisUpdate:          now,
+		NextUpdate:          nextUpdate,
+		// Optionally, you can include a CRL number:
+		Number: big.NewInt(1),
+	}
+
+	crlBytes, err := x509.CreateRevocationList(rand.Reader, crlList, caCert, caKey)
+	if err != nil {
+		log.Fatalf("Error creating CRL: %v", err)
+	}
+
+	// Encode the CRL to PEM format.
+	pemCRL := pem.EncodeToMemory(&pem.Block{
+		Type:  "X509 CRL",
+		Bytes: crlBytes,
+	})
+
+	requestBody := RemoveResponderRequest{
+		IssuerCert: string(CertToPEM(caCert)),
+		OcspCert:   string(CertToPEM(certToRevoke)),
+		Crl:        string(pemCRL),
+	}
+
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return err
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/removeresponder", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(HandleRemoveResponder)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		return fmt.Errorf("Status ist not OK: %v", rr.Code)
+	}
+	return nil
 }
 
 func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Certificate) error {

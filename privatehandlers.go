@@ -73,7 +73,7 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 		Logger.Error("failed to parse issuer certificate",
 			"error", err,
 		)
-		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
+		http.Error(w, "Failed to upload certificate", http.StatusInternalServerError)
 		return
 	}
 	fmt.Printf("hhhash: %s\n", hashstring)
@@ -81,6 +81,78 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	ocspCertManager.AddResponder(responder)
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte("Certificate uploaded successfully"))
+}
+
+type RemoveResponderRequest struct {
+	IssuerCert string `json:"issuer_certificate"`
+	OcspCert   string `json:"ocsp_certificate"`
+	Crl        string `json:"crl"`
+}
+
+func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
+	if !validateMethod(w, r, http.MethodPost) {
+		return
+	}
+	//Validation
+	var req RemoveResponderRequest
+	if !decodeJSONRequest(w, r, &req) {
+		return
+	}
+
+	caCert, err := PemToCert([]byte(req.IssuerCert))
+	if err != nil {
+		Logger.Error("failed to parse issuer certificate",
+			"error", err,
+		)
+		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
+		return
+	}
+
+	ocspCert, err := PemToCert([]byte(req.OcspCert))
+	if err != nil {
+		Logger.Error("failed to parse ocsp certificate",
+			"error", err,
+		)
+		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
+		return
+	}
+
+	crl, err := PemToCrl(req.Crl)
+	if err != nil {
+		Logger.Error("failed to parse crl",
+			"error", err,
+		)
+		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
+		return
+	}
+
+	isrevoked := false
+	for _, revoked := range crl.RevokedCertificates {
+		// Compare the serial numbers.
+		if revoked.SerialNumber.Cmp(ocspCert.SerialNumber) == 0 {
+			isrevoked = true
+		}
+	}
+	if !isrevoked {
+		Logger.Error("OCSP certificate is not revoked in crl",
+			"error", err,
+		)
+		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
+		return
+	}
+	o := OCSPResponder{OcspCert: ocspCert, IssuerCert: caCert}
+	hash, err := o.ComputeIssuerKeyHash()
+	if err != nil {
+		Logger.Error("failed to calculate hash",
+			"error", err,
+		)
+		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
+		return
+	}
+	ocspCertManager.RemoveResponder(hash)
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Certificate successfully removed"))
+
 }
 
 type createNewCsrRequest struct {

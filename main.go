@@ -29,6 +29,7 @@ func StartPublicListener() {
 func StartPrivateListener() {
 	http.HandleFunc("/createnewcsr", HandleCreateNewCsr)
 	http.HandleFunc("/uploadsignedcert", HandleUploadSignedCert)
+	http.HandleFunc("/removeresponder", HandleRemoveResponder)
 	http.HandleFunc("/listcerts", HandleListCerts)
 
 	err := http.ListenAndServe(Config.HostnamePublicApi, nil)

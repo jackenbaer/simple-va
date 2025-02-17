@@ -59,3 +59,15 @@ func PemToCert(pemData []byte) (*x509.Certificate, error) {
 	}
 	return cert, nil
 }
+
+func PemToCrl(pemData string) (*x509.RevocationList, error) {
+	block, _ := pem.Decode([]byte(pemData))
+	if block == nil || block.Type != "X509 CRL" {
+		return nil, errors.New("failed to decode PEM block containing a CRL")
+	}
+	crl, err := x509.ParseRevocationList(block.Bytes)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing CRL: %w", err)
+	}
+	return crl, nil
+}
