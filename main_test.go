@@ -77,7 +77,7 @@ func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Cert
 
 	// Create the RevocationList structure.
 	crlList := &x509.RevocationList{
-		SignatureAlgorithm:  x509.SHA256WithRSA,
+		SignatureAlgorithm:  x509.ECDSAWithSHA256,
 		RevokedCertificates: revokedCerts,
 		ThisUpdate:          now,
 		NextUpdate:          nextUpdate,
@@ -87,7 +87,7 @@ func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Cert
 
 	crlBytes, err := x509.CreateRevocationList(rand.Reader, crlList, caCert, caKey)
 	if err != nil {
-		log.Fatalf("Error creating CRL: %v", err)
+		return err
 	}
 
 	// Encode the CRL to PEM format.
@@ -341,6 +341,17 @@ func TestCertgen(t *testing.T) {
 	fmt.Println("This Update:", ocspResp.ThisUpdate)
 	fmt.Println("Next Update:", ocspResp.NextUpdate)
 	fmt.Println("Produced At:", ocspResp.ProducedAt)
+
+	fmt.Println("Removing ocsp responder ...")
+	err = HandleRemoveResponderTest(ocspSignerCert, rootCert, rootKey)
+	if err != nil {
+		t.Fatalf("Failed to upload cert. %v", err)
+	}
+	certs, err = HandleListCertsTest()
+	if err != nil {
+		t.Fatalf("Failed to list certificates. %v", err)
+	}
+	fmt.Printf("Listed certificates: %v\n", certs)
 }
 
 func OCSPCerts() ([]string, error) {
