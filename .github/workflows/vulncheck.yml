@@ -3,10 +3,6 @@ name: Vulnerability Check Only
 on:
   schedule:
     - cron: '*/10 * * * *'  
-  push:
-    branches:
-      - main
-
 
 jobs:
   vulncheck:
