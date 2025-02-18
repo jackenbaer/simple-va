@@ -1,0 +1,19 @@
+name: Vulnerability Check Only
+
+on:
+  schedule:
+    - cron: '04 19 * * *'  # Runs at midnight UTC every day
+
+jobs:
+  vulncheck:
+    name: govulncheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run govulncheck
+        uses: golang/govulncheck-action@v1
+        with:
+          go-version-input: '1.23.6'
+          go-package: './...'
