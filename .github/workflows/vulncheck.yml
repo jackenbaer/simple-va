@@ -2,7 +2,7 @@ name: Vulnerability Check Only
 
 on:
   schedule:
-    - cron: '08 19 * * *'  # Runs at midnight UTC every day
+    - cron: '12 20 * * *' 
 
 jobs:
   vulncheck:

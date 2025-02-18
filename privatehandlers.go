@@ -86,7 +86,6 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 type RemoveResponderRequest struct {
 	IssuerCert string `json:"issuer_certificate"`
 	OcspCert   string `json:"ocsp_certificate"`
-	Crl        string `json:"crl"`
 }
 
 func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
@@ -117,29 +116,6 @@ func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	crl, err := PemToCrl(req.Crl)
-	if err != nil {
-		Logger.Error("failed to parse crl",
-			"error", err,
-		)
-		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
-		return
-	}
-
-	isrevoked := false
-	for _, revoked := range crl.RevokedCertificates {
-		// Compare the serial numbers.
-		if revoked.SerialNumber.Cmp(ocspCert.SerialNumber) == 0 {
-			isrevoked = true
-		}
-	}
-	if !isrevoked {
-		Logger.Error("OCSP certificate is not revoked in crl",
-			"error", err,
-		)
-		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
-		return
-	}
 	o := OCSPResponder{OcspCert: ocspCert, IssuerCert: caCert}
 	hash, err := o.ComputeIssuerKeyHash()
 	if err != nil {
