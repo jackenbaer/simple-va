@@ -1,6 +1,6 @@
 module validation-authority
 
-go 1.23.6
+go 1.24.2
 
 require (
 	golang.org/x/crypto v0.37.0
