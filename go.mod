@@ -3,7 +3,7 @@ module validation-authority
 go 1.23.6
 
 require (
-	golang.org/x/crypto v0.32.0
+	golang.org/x/crypto v0.37.0
 	gopkg.in/ini.v1 v1.67.0
 )
 
