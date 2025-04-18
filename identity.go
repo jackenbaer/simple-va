@@ -29,7 +29,7 @@ func (i *Identity) PrivateKeyMatchesCert(cert *x509.Certificate) error {
 	if pub.Curve != i.privateKey.PublicKey.Curve ||
 		pub.X.Cmp(i.privateKey.PublicKey.X) != 0 ||
 		pub.Y.Cmp(i.privateKey.PublicKey.Y) != 0 {
-		return errors.New("Private does not match certificate")
+		return errors.New("private does not match certificate")
 	}
 	return nil
 }

@@ -30,7 +30,7 @@ func isValidOCSPSigning(cert *x509.Certificate) error {
 	if hasDigitalSignature && hasOCSPSigning {
 		return nil
 	}
-	return errors.New("Certificate does not qualify as ocsp certificate")
+	return errors.New("certificate does not qualify as ocsp certificate")
 }
 
 type OCSPResponder struct {
@@ -130,7 +130,7 @@ func (o *OCSPCertManager) LoadCertsFromDisk() error {
 			}
 			//make sure the list stays unique
 			if _, exists := o.responders[issuerKeyHash]; exists {
-				return fmt.Errorf("A Responder for this issuer already exists")
+				return fmt.Errorf("a responder for this issuer already exists")
 			}
 
 			err = identity.PrivateKeyMatchesCert(r.OcspCert)
@@ -177,7 +177,7 @@ func (o *OCSPCertManager) AddResponder(r OCSPResponder) error {
 		return err
 	}
 	if _, exists := o.responders[issuerHashString]; exists {
-		return fmt.Errorf("A Responder for this issuer already exists")
+		return fmt.Errorf("a responder for this issuer already exists")
 	}
 
 	o.responders[issuerHashString] = r
