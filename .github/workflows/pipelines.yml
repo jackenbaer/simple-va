@@ -5,25 +5,33 @@ on:
     branches:
       - main
     tags:
-      - "v*.*.*"  
+      - "v*.*.*"
   pull_request:
     branches:
       - main
 
+env:
+  GO_VERSION: "1.24.2"
+
 jobs:
   test-endpoint:
-    name:  endpoint tests
+    name: endpoint tests
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
       - name: Golang Tests
         run: go test -v
 
   vulncheck:
-    name:  govulncheck
+    name: govulncheck
     runs-on: ubuntu-latest
 
     steps:
@@ -33,14 +41,14 @@ jobs:
       - name: govulncheck
         uses: golang/govulncheck-action@v1
         with:
-          go-version-input: '1.24.2'
+          go-version-input: ${{ env.GO_VERSION }}
           go-package: './...'
-  
+
   build:
     name: Build and Inject Version
-    needs: [test-endpoint, vulncheck]  
+    needs: [test-endpoint, vulncheck]
+    if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/') 
     strategy:
       matrix:
         os: [linux]
@@ -53,7 +61,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.24.2" 
+          go-version: ${{ env.GO_VERSION }}
 
       - name: Get build metadata
         run: |
@@ -64,8 +72,10 @@ jobs:
       - name: Build Binary with Version Injection
         run: |
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
-          go build -ldflags "-X 'main.Version=${{ github.ref_name }}' -X 'main.Commit=${COMMIT}' -X 'main.BuildTime=${BUILD_TIME}'" \
-          -o simple-va-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} .
+          go build -ldflags "-X 'main.Version=${{ github.ref_name }}' \
+                              -X 'main.Commit=${COMMIT}' \
+                              -X 'main.BuildTime=${BUILD_TIME}'" \
+            -o simple-va-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} .
 
       - name: Upload Built Binary
         uses: actions/upload-artifact@v4
@@ -75,9 +85,9 @@ jobs:
 
   release:
     name: Create GitHub Release
-    runs-on: ubuntu-latest
     needs: [build]
     if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
 
     steps:
       - name: Download All Artifacts
@@ -88,7 +98,7 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: release_artifacts/**  
+          files: release_artifacts/**
           tag_name: ${{ github.ref_name }}
           name: "Release ${{ github.ref_name }}"
           draft: true
