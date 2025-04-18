@@ -10,7 +10,7 @@ import (
 	"runtime/debug"
 )
 
-// Default if not set at build time
+// Default, will be overwritten at build time by the pipeline
 var (
 	Version   = "dev"
 	Commit    = "none"
