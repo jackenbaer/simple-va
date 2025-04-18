@@ -1,7 +1,7 @@
 
 Simple Validation Authority 
 
-Root CA not required
+Root CA not required, instead only a ocsp signing ca is used 
 
 
 
