@@ -7,6 +7,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"net/http"
+	"runtime/debug"
 )
 
 type subjectPublicKeyInfo struct {
@@ -50,6 +51,7 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Logger.Error("failed to parse ocsp certificate",
 			"error", err,
+			"stack", string(debug.Stack()),
 		)
 		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
 		return
@@ -58,6 +60,7 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Logger.Error("failed to parse issuer certificate",
 			"error", err,
+			"stack", string(debug.Stack()),
 		)
 		http.Error(w, "Failed to Upload Certificate", http.StatusInternalServerError)
 		return
@@ -72,6 +75,7 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Logger.Error("failed to parse issuer certificate",
 			"error", err,
+			"stack", string(debug.Stack()),
 		)
 		http.Error(w, "Failed to upload certificate", http.StatusInternalServerError)
 		return
@@ -102,6 +106,7 @@ func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Logger.Error("failed to parse issuer certificate",
 			"error", err,
+			"stack", string(debug.Stack()),
 		)
 		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
 		return
@@ -111,6 +116,7 @@ func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Logger.Error("failed to parse ocsp certificate",
 			"error", err,
+			"stack", string(debug.Stack()),
 		)
 		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
 		return
@@ -121,6 +127,7 @@ func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Logger.Error("failed to calculate hash",
 			"error", err,
+			"stack", string(debug.Stack()),
 		)
 		http.Error(w, "Failed to remove certificate", http.StatusInternalServerError)
 		return
@@ -174,6 +181,7 @@ func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		Logger.Error("CSR generation Failed",
 			"error", err,
+			"stack", string(debug.Stack()),
 		)
 
 		http.Error(w, "CSR generation Failed.", http.StatusBadRequest)

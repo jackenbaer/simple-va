@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"runtime/debug"
 	"testing"
 	"time"
 
@@ -356,21 +357,21 @@ func TestMain(m *testing.M) {
 	}
 	err = Config.Validate()
 	if err != nil {
-		Logger.Error("Failed to validate configuration", "error", err)
+		Logger.Error("Failed to validate configuration", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 
 	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath}
 	err = identity.Init()
 	if err != nil {
-		Logger.Error("Failed to init identity", "error", err)
+		Logger.Error("Failed to init identity", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 
 	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
 	err = ocspCertManager.Init()
 	if err != nil {
-		Logger.Error("Failed to init ocsp certificate manager", "error", err)
+		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 

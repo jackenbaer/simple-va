@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"runtime/debug"
 )
 
 // Default if not set at build time
@@ -34,7 +35,7 @@ func StartPrivateListener() {
 
 	err := http.ListenAndServe(Config.HostnamePublicApi, nil)
 	if err != nil {
-		Logger.Error("Error starting private API listener")
+		Logger.Error("Error starting private API listener", "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 
@@ -55,14 +56,14 @@ func main() {
 	Config.LoadFromFile("./config.ini")
 	err := Config.Validate()
 	if err != nil {
-		Logger.Error("Failed to validate configuration", "error", err)
+		Logger.Error("Failed to validate configuration", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 
 	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath}
 	err = identity.Init()
 	if err != nil {
-		Logger.Error("Failed to init identity", "error", err)
+		Logger.Error("Failed to init identity", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 
@@ -70,7 +71,7 @@ func main() {
 
 	err = ocspCertManager.Init()
 	if err != nil {
-		Logger.Error("Failed to init ocsp certificate manager", "error", err)
+		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 

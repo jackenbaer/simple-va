@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"net/http"
+	"runtime/debug"
 )
 
 // Unified method validator
@@ -41,6 +42,7 @@ func writeJSONResponse(w http.ResponseWriter, statusCode int, data interface{}) 
 	if err := json.NewEncoder(w).Encode(data); err != nil {
 		Logger.Error("Failed to encode response",
 			"error", err,
+			"stack", string(debug.Stack()),
 		)
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
