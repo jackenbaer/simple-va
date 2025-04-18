@@ -6,6 +6,6 @@ on:
 
 jobs:
   govuln:
-    uses: ./.github/workflows/go-pipeline.yml
+    uses: ./.github/workflows/pipelines.yml
     with:
       run-vulncheck: true

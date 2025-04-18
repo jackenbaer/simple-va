@@ -9,7 +9,7 @@ on:
 
 jobs:
   go:
-    uses: ./.github/workflows/go-pipeline.yml
+    uses: ./.github/workflows/pipelines.yml
     with:
       run-tests:      true
       run-vulncheck:  true
