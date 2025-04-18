@@ -1,0 +1,11 @@
+name: Vulnerability Check Only
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  govuln:
+    uses: ./.github/workflows/go-pipeline.yml
+    with:
+      run-vulncheck: true

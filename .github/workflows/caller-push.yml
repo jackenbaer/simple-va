@@ -1,0 +1,16 @@
+name: Test simple-va
+
+on:
+  push:
+    branches: [ main ]
+    tags:    [ 'v*.*.*' ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  go:
+    uses: ./.github/workflows/go-pipeline.yml
+    with:
+      run-tests:      true
+      run-vulncheck:  true
+      do-build:       ${{ startsWith(github.ref, 'refs/tags/') }}
