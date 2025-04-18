@@ -1,5 +1,7 @@
 
+Simple Validation Authority 
 
+Root CA not required
 
 
 
