@@ -13,6 +13,8 @@ type Configuration struct {
 	HostnamePublicApi  string `ini:"hostname_public_api"`
 	PrivateKeyPath     string `ini:"private_key_path"`
 	CertsFolderPath    string `ini:"certificate_path"`
+	InputApiKeysPath   string `ini:"input_api_keys_path"`
+	HashedApiKeysPath  string `ini:"hashed_api_keys_path"`
 }
 
 func (c *Configuration) LoadFromFile(f string) error {
@@ -50,5 +52,22 @@ func (c *Configuration) Validate() error {
 	if os.IsNotExist(err) {
 		return err
 	}
+	_, err = os.Stat(Config.InputApiKeysPath)
+	if os.IsNotExist(err) {
+		// hashed api keys required
+		_, err = os.Stat(Config.HashedApiKeysPath)
+		if os.IsNotExist(err) {
+			return err
+		}
+	}
+	_, err = os.Stat(Config.HashedApiKeysPath)
+	if os.IsNotExist(err) {
+		// input api keys required
+		_, err = os.Stat(Config.InputApiKeysPath)
+		if os.IsNotExist(err) {
+			return err
+		}
+	}
+
 	return nil
 }
