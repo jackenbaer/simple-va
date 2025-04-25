@@ -22,7 +22,7 @@ type HashedApiKeyEntry struct {
 	Comment string `json:"comment"`
 }
 
-func HashInputApiKeys(entries []InputApiKeyEntry) []HashedApiKeyEntry {
+func HashApiKeys(entries []InputApiKeyEntry) []HashedApiKeyEntry {
 	const RECOMMENDED_KEY_LENGTH = 32
 	var hashedEntries []HashedApiKeyEntry
 	// hash api keys
@@ -87,23 +87,23 @@ func ReadApiKeysFromJsonFile[T ApiKeyEntry](inputFile string) []T {
 }
 
 // inputFile: path + filename
-func HashInputApiKeysFromFile(inputFile string, outputFile string, deleteInputFile bool) bool {
+func HashInputApiKeys(config *Configuration) bool {
 	// try to read input file
-	inputApiKeyEntries := ReadApiKeysFromJsonFile[InputApiKeyEntry](inputFile)
+	inputApiKeyEntries := ReadApiKeysFromJsonFile[InputApiKeyEntry](config.InputApiKeysPath)
 	if inputApiKeyEntries == nil {
 		return false
 	}
 
 	fmt.Println("Hashing API keys...")
 
-	hashedEntries := HashInputApiKeys(inputApiKeyEntries)
+	hashedEntries := HashApiKeys(inputApiKeyEntries)
 	if hashedEntries == nil {
 		fmt.Println("No API keys in input file defined.")
 		return false
 	}
 	fmt.Println("API keys hashed.")
 
-	err := WriteHashedApiKeysToJsonFile(outputFile, hashedEntries)
+	err := WriteHashedApiKeysToJsonFile(config.HashedApiKeysPath, hashedEntries)
 	if err != nil {
 		fmt.Println("Error when writing/encoding hashed API keys:", err)
 		return false
@@ -111,8 +111,8 @@ func HashInputApiKeysFromFile(inputFile string, outputFile string, deleteInputFi
 	fmt.Println("Hashed API keys saved.")
 
 	// delete input file
-	if deleteInputFile {
-		err := os.Remove(inputFile)
+	if config.DeleteInputApiKeyFile {
+		err := os.Remove(config.InputApiKeysPath)
 		if err != nil {
 			fmt.Println("Input file couldn't be removed:", err)
 		}
