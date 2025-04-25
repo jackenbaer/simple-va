@@ -8,6 +8,10 @@ import (
 	"os"
 )
 
+type ApiKeyEntry interface {
+	InputApiKeyEntry | HashedApiKeyEntry
+}
+
 type InputApiKeyEntry struct {
 	Key     string `json:"key"`
 	Comment string `json:"comment"`
@@ -61,7 +65,7 @@ func WriteHashedApiKeysToJsonFile(outputFile string, entries []HashedApiKeyEntry
 	return nil
 }
 
-func ReadInputApiKeysFromJsonFile(inputFile string) []InputApiKeyEntry {
+func ReadApiKeysFromJsonFile[T ApiKeyEntry](inputFile string) []T {
 	// try to read input file
 	iFile, err := os.Open(inputFile)
 	if err != nil {
@@ -70,23 +74,23 @@ func ReadInputApiKeysFromJsonFile(inputFile string) []InputApiKeyEntry {
 	defer iFile.Close()
 
 	// json to struct
-	var inputApiKeyEntries []InputApiKeyEntry
+	var apiKeyEntries []T
 	decoder := json.NewDecoder(iFile)
 
-	err = decoder.Decode(&inputApiKeyEntries)
+	err = decoder.Decode(&apiKeyEntries)
 	if err != nil {
+		fmt.Println("No valid API key entries in input file.")
 		return nil
 	}
 
-	return inputApiKeyEntries
+	return apiKeyEntries
 }
 
 // inputFile: path + filename
-func HashInputApiKeysFromJson(inputFile string, outputFile string, deleteInputFile bool) bool {
+func HashInputApiKeysFromFile(inputFile string, outputFile string, deleteInputFile bool) bool {
 	// try to read input file
-	inputApiKeyEntries := ReadInputApiKeysFromJsonFile(inputFile)
+	inputApiKeyEntries := ReadApiKeysFromJsonFile[InputApiKeyEntry](inputFile)
 	if inputApiKeyEntries == nil {
-		fmt.Println("No valid API key entries in input file.")
 		return false
 	}
 
@@ -97,7 +101,7 @@ func HashInputApiKeysFromJson(inputFile string, outputFile string, deleteInputFi
 		fmt.Println("No API keys in input file defined.")
 		return false
 	}
-	fmt.Println("Entries hashed.")
+	fmt.Println("API keys hashed.")
 
 	err := WriteHashedApiKeysToJsonFile(outputFile, hashedEntries)
 	if err != nil {
@@ -116,4 +120,13 @@ func HashInputApiKeysFromJson(inputFile string, outputFile string, deleteInputFi
 	}
 
 	return true
+}
+
+func LoadHashedApiKeysFromFile(inputFile string) []HashedApiKeyEntry {
+	apiKeyEntries := ReadApiKeysFromJsonFile[HashedApiKeyEntry](inputFile)
+	if apiKeyEntries == nil {
+		return nil
+	}
+	fmt.Println("Hashed API keys loaded.")
+	return apiKeyEntries
 }

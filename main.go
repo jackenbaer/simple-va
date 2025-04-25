@@ -67,7 +67,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	HashInputApiKeysFromJson(Config.InputApiKeysPath, Config.HashedApiKeysPath, Config.DeleteInputApiKeyFile)
+	HashInputApiKeysFromFile(Config.InputApiKeysPath, Config.HashedApiKeysPath, Config.DeleteInputApiKeyFile)
+	LoadHashedApiKeysFromFile(Config.HashedApiKeysPath)
 
 	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
 
