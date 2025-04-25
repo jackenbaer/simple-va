@@ -9,12 +9,13 @@ import (
 )
 
 type Configuration struct {
-	HostnamePrivateApi string `ini:"hostname_private_api"`
-	HostnamePublicApi  string `ini:"hostname_public_api"`
-	PrivateKeyPath     string `ini:"private_key_path"`
-	CertsFolderPath    string `ini:"certificate_path"`
-	InputApiKeysPath   string `ini:"input_api_keys_path"`
-	HashedApiKeysPath  string `ini:"hashed_api_keys_path"`
+	HostnamePrivateApi    string `ini:"hostname_private_api"`
+	HostnamePublicApi     string `ini:"hostname_public_api"`
+	PrivateKeyPath        string `ini:"private_key_path"`
+	CertsFolderPath       string `ini:"certificate_path"`
+	InputApiKeysPath      string `ini:"input_api_keys_path"`
+	HashedApiKeysPath     string `ini:"hashed_api_keys_path"`
+	DeleteInputApiKeyFile bool   `ini:"delete_input_api_key_file"`
 }
 
 func (c *Configuration) LoadFromFile(f string) error {
