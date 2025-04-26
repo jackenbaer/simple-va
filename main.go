@@ -68,9 +68,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	err = security.LoadApiKeysFromJsonFile(Config.HashedApiKeysPath)
+	APIKeyStore, err := security.NewAPIKeyStoreFromFile(Config.HashedApiKeysPath)
 	if err != nil {
 		Logger.Error("Could not load api keys", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
+	}
+	if !APIKeyStore.AllAPIKeysValid() {
+		Logger.Error("Invalid API key detected", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 
