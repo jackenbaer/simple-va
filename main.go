@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"validation-authority/security"
 	"validation-authority/storage"
 )
 
@@ -65,6 +66,16 @@ func main() {
 	err = identity.Init()
 	if err != nil {
 		Logger.Error("Failed to init identity", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
+	}
+
+	APIKeyStore, err := security.NewAPIKeyStoreFromFile(Config.HashedApiKeysPath)
+	if err != nil {
+		Logger.Error("Could not load api keys", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
+	}
+	if !APIKeyStore.AllAPIKeysValid() {
+		Logger.Error("Invalid API key or format detected", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 

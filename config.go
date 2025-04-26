@@ -14,6 +14,7 @@ type Configuration struct {
 	PrivateKeyPath     string `ini:"private_key_path"`
 	CertsFolderPath    string `ini:"certificate_path"`
 	CertStatusPath     string `ini:"cert_status_path"`
+	HashedApiKeysPath  string `ini:"hashed_api_keys_path"`
 }
 
 func (c *Configuration) LoadFromFile(f string) error {
@@ -51,5 +52,10 @@ func (c *Configuration) Validate() error {
 	if os.IsNotExist(err) {
 		return err
 	}
+	_, err = os.Stat(Config.HashedApiKeysPath)
+	if os.IsNotExist(err) {
+		return err
+	}
+
 	return nil
 }
