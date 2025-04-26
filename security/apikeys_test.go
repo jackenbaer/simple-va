@@ -115,3 +115,41 @@ func TestIsValidApiKey(t *testing.T) {
 		})
 	}
 }
+
+func TestAllAPIKeysValid(t *testing.T) {
+	tests := []struct {
+		name      string
+		inputFile string
+		wantErr   bool
+	}{
+		{
+			name:      "valid file",
+			inputFile: "../testdata/hashed_api_keys.json",
+			wantErr:   false,
+		},
+		{
+			name:      "empty file",
+			inputFile: "../testdata/invalid_hashed_api_keys_2.json",
+			wantErr:   true,
+		},
+		{
+			name:      "typing error",
+			inputFile: "../testdata/invalid_hashed_api_keys_3.json",
+			wantErr:   true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			APIKeyStore, err := NewAPIKeyStoreFromFile(tt.inputFile)
+
+			if err != nil {
+				t.Errorf("Preparing TestAllAPIKeysValid() error = %v", err)
+			}
+
+			if APIKeyStore.AllAPIKeysValid() == tt.wantErr {
+				t.Errorf("AllAPIKeysValid() for %q, error = %v, wantErr %v", tt.inputFile, err, tt.wantErr)
+			}
+		})
+	}
+}
