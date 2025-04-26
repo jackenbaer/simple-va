@@ -16,10 +16,10 @@ func TestAddAndGet(t *testing.T) {
 
 	// 2) add two entries
 	exp := time.Now().Add(365 * 24 * time.Hour)
-	if err := db.AddEntry("issuerA", "deadbeef", 1, exp, time.Now(), "KeyCompromise"); err != nil {
+	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "deadbeef", Status: 1, ExpirationDate: exp, RevocationDate: time.Now(), RevocationReason: "KeyCompromise"}); err != nil {
 		t.Fatalf("AddEntry failed: %v", err)
 	}
-	if err := db.AddEntry("issuerA", "cafebabe", 0, exp, time.Time{}, ""); err != nil {
+	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "cafebabe", Status: 0, ExpirationDate: exp, RevocationDate: time.Time{}, RevocationReason: ""}); err != nil {
 		t.Fatalf("AddEntry failed: %v", err)
 	}
 
@@ -58,7 +58,7 @@ func TestRemove(t *testing.T) {
 
 	// prepare data
 	exp := time.Now().Add(24 * time.Hour)
-	if err := db.AddEntry("issuerA", "deadbeef", 1, exp, time.Now(), "compromise"); err != nil {
+	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "deadbeef", Status: 1, ExpirationDate: exp, RevocationDate: time.Now(), RevocationReason: "compromise"}); err != nil {
 		t.Fatalf("AddEntry failed: %v", err)
 	}
 	if _, ok := db.GetEntry("issuerA", "deadbeef"); !ok {
@@ -98,10 +98,8 @@ func TestRemoveExpired(t *testing.T) {
 	now := time.Now()
 
 	// add one expired, one still valid
-	db.AddEntry("issuerX", "expiredSN",
-		1, now.Add(-24*time.Hour), now.Add(-24*time.Hour), "superseded")
-	db.AddEntry("issuerX", "validSN",
-		0, now.Add(24*time.Hour), time.Time{}, "")
+	db.AddEntry("issuerX", OCSPEntry{SerialNumber: "expiredSN", Status: 1, ExpirationDate: now.Add(-24 * time.Hour), RevocationDate: now.Add(-24 * time.Hour), RevocationReason: "superseded"})
+	db.AddEntry("issuerX", OCSPEntry{SerialNumber: "validSN", Status: 0, ExpirationDate: now.Add(24 * time.Hour), RevocationDate: time.Time{}, RevocationReason: ""})
 
 	// act
 	err := db.RemoveExpired(now)
