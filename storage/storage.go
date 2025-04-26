@@ -103,9 +103,7 @@ func (db *CertStatus) Remove(issuerKeyHash, serialNumber string) (bool, error) {
 	return true, err
 }
 
-// RemoveExpired drops every entry whose ExpirationDate is before now
-// without blocking parallel readers while it scans.
-// It returns the number of removed entries.
+// RemoveExpired drops every entry whose ExpirationDate is before now without blocking parallel readers while it scans.
 func (db *CertStatus) RemoveExpired(now time.Time) error {
 	//create copy of map under read lock
 	db.mu.RLock()
@@ -131,7 +129,7 @@ func (db *CertStatus) RemoveExpired(now time.Time) error {
 		return nil
 	}
 
-	//atomically swap the map under write-lock ----------------------
+	//atomically swap the map under write-lock
 	db.mu.Lock()
 	db.StatusMap = newMap
 	err := db.saveJsonToDisk()
