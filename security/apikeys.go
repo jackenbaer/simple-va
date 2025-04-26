@@ -13,12 +13,6 @@ type APIKeyStore struct {
 	mu      sync.RWMutex
 }
 
-// hashSha256 applies sha256 to the input string and returns the hash value
-func hashSha256(key string) string {
-	hash := sha256.Sum256([]byte(key))
-	return hex.EncodeToString(hash[:])
-}
-
 // NewAPIKeyStoreFromFile reads hashed apikeys from a json file and returns them as a map (key = hash, value = comment)
 func NewAPIKeyStoreFromFile(inputFile string) (*APIKeyStore, error) {
 	file, err := os.Open(inputFile)
@@ -44,7 +38,10 @@ func (s *APIKeyStore) IsValidAPIKey(key string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	_, exists := s.hashMap[hashSha256(key)]
+	hash := sha256.Sum256([]byte(key))
+	hashString := hex.EncodeToString(hash[:])
+
+	_, exists := s.hashMap[hashString]
 	return exists
 }
 
