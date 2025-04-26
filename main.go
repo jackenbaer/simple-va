@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"validation-authority/security"
 )
 
 // Default, will be overwritten at build time by the pipeline
@@ -67,8 +68,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	HashInputApiKeys(Config)
-	LoadHashedApiKeysFromFile(Config.HashedApiKeysPath)
+	err = security.LoadApiKeysFromJsonFile(Config.HashedApiKeysPath)
+	if err != nil {
+		Logger.Error("Could not load api keys", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
+	}
 
 	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
 
