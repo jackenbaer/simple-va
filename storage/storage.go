@@ -54,7 +54,7 @@ func (db *CertStatus) saveJsonToDisk() error {
 	return encoder.Encode(db.StatusMap)
 }
 
-func (db *CertStatus) AddEntry(issuerKeyHash string, serialNumber string, status int, expiration time.Time, revocation time.Time, reason string) error {
+func (db *CertStatus) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -62,13 +62,7 @@ func (db *CertStatus) AddEntry(issuerKeyHash string, serialNumber string, status
 		db.StatusMap[issuerKeyHash] = make(map[string]OCSPEntry)
 	}
 
-	db.StatusMap[issuerKeyHash][serialNumber] = OCSPEntry{
-		Status:           status,
-		ExpirationDate:   expiration,
-		RevocationDate:   revocation,
-		RevocationReason: reason,
-		SerialNumber:     serialNumber,
-	}
+	db.StatusMap[issuerKeyHash][entry.SerialNumber] = entry
 	err := db.saveJsonToDisk()
 	if err != nil {
 		return err
