@@ -53,15 +53,12 @@ func (s *APIKeyStore) AllAPIKeysValid() bool {
 	defer s.mu.RUnlock()
 
 	const MIN_KEYS_REQUIRED = 1
-	counter := 0
 
 	for key, _ := range s.hashMap {
 		if len(key) < 64 {
 			return false
 		}
-
-		counter++
 	}
 
-	return !(counter < MIN_KEYS_REQUIRED)
+	return !(len(s.hashMap) < MIN_KEYS_REQUIRED)
 }
