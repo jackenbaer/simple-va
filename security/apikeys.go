@@ -48,12 +48,13 @@ func (s *APIKeyStore) IsValidAPIKey(key string) bool {
 
 // AllAPIKeysValid checks whether all loaded API keys have in the correct format
 func (s *APIKeyStore) AllAPIKeysValid() bool {
-	re := regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
+	re := regexp.MustCompile(`^[a-f0-9]{64}$`)
 
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	for key, _ := range s.hashMap {
+
 		if !re.MatchString(key) {
 			return false
 		}

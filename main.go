@@ -74,7 +74,7 @@ func main() {
 		os.Exit(1)
 	}
 	if !APIKeyStore.AllAPIKeysValid() {
-		Logger.Error("Invalid API key detected", "error", err, "stack", string(debug.Stack()))
+		Logger.Error("Invalid API key or format detected", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 

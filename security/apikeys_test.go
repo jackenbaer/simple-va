@@ -115,6 +115,11 @@ func TestAllAPIKeysValid(t *testing.T) {
 			inputFile: "../testdata/invalid_hashed_api_keys_3.json",
 			wantErr:   true,
 		},
+		{
+			name:      "uppercase chars in key",
+			inputFile: "../testdata/invalid_hashed_api_keys_5.json",
+			wantErr:   true,
+		},
 	}
 
 	for _, tt := range tests {
