@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"os"
+	"regexp"
 	"sync"
 )
 
@@ -33,7 +34,7 @@ func NewAPIKeyStoreFromFile(inputFile string) (*APIKeyStore, error) {
 	}, nil
 }
 
-// IsValidAPIKey checks whether the hashed apikey is loaded
+// IsValidAPIKey checks whether the hashed API key is loaded
 func (s *APIKeyStore) IsValidAPIKey(key string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
@@ -45,17 +46,18 @@ func (s *APIKeyStore) IsValidAPIKey(key string) bool {
 	return exists
 }
 
+// AllAPIKeysValid checks whether all loaded API keys have in the correct format
 func (s *APIKeyStore) AllAPIKeysValid() bool {
+	re := regexp.MustCompile(`^[a-fA-F0-9]{64}$`)
+
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
-	const MIN_KEYS_REQUIRED = 1
-
 	for key, _ := range s.hashMap {
-		if len(key) < 64 {
+		if !re.MatchString(key) {
 			return false
 		}
 	}
 
-	return !(len(s.hashMap) < MIN_KEYS_REQUIRED)
+	return !(len(s.hashMap) < 1)
 }
