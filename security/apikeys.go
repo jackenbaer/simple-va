@@ -8,10 +8,10 @@ import (
 	"sync"
 )
 
-var (
+type APIKeyStore struct {
 	hashMap map[string]string
 	mu      sync.RWMutex
-)
+}
 
 // hashSha256 applies sha256 to the input string and returns the hash value
 func hashSha256(key string) string {
@@ -19,11 +19,11 @@ func hashSha256(key string) string {
 	return hex.EncodeToString(hash[:])
 }
 
-// LoadApiKeysFromJsonFile reads hashed apikeys from a json file and returns them as a map (key = hash, value = comment)
-func LoadApiKeysFromJsonFile(inputFile string) error {
+// NewAPIKeyStoreFromFile reads hashed apikeys from a json file and returns them as a map (key = hash, value = comment)
+func NewAPIKeyStoreFromFile(inputFile string) (*APIKeyStore, error) {
 	file, err := os.Open(inputFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer file.Close()
 
@@ -31,21 +31,37 @@ func LoadApiKeysFromJsonFile(inputFile string) error {
 	decoder := json.NewDecoder(file)
 
 	if err = decoder.Decode(&hashes); err != nil {
-		return err
+		return nil, err
 	}
 
-	mu.Lock()
-	defer mu.Unlock()
-	hashMap = hashes
-
-	return nil
+	return &APIKeyStore{
+		hashMap: hashes,
+	}, nil
 }
 
-// IsValidApiKey checks whether the hashed apikey is loaded
-func IsValidApiKey(key string) bool {
-	mu.RLock()
-	defer mu.RUnlock()
+// IsValidAPIKey checks whether the hashed apikey is loaded
+func (s *APIKeyStore) IsValidAPIKey(key string) bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
 
-	_, exists := hashMap[hashSha256(key)]
+	_, exists := s.hashMap[hashSha256(key)]
 	return exists
+}
+
+func (s *APIKeyStore) AllAPIKeysValid() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	const MIN_KEYS_REQUIRED = 1
+	counter := 0
+
+	for key, _ := range s.hashMap {
+		if len(key) < 64 {
+			return false
+		}
+
+		counter++
+	}
+
+	return !(counter < MIN_KEYS_REQUIRED)
 }
