@@ -44,9 +44,6 @@ func (db *CertStatus) Init() error {
 }
 
 func (db *CertStatus) saveJsonToDisk() error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
-
 	file, err := os.Create(db.CertStatusPath)
 	if err != nil {
 		return err
@@ -72,9 +69,7 @@ func (db *CertStatus) AddEntry(issuerKeyHash string, serialNumber string, status
 		RevocationReason: reason,
 		SerialNumber:     serialNumber,
 	}
-	db.mu.Unlock()
 	err := db.saveJsonToDisk()
-	db.mu.Lock()
 	if err != nil {
 		return err
 	}
@@ -110,9 +105,7 @@ func (db *CertStatus) Remove(issuerKeyHash, serialNumber string) (bool, error) {
 		delete(db.StatusMap, issuerKeyHash)
 	}
 
-	db.mu.Unlock()
 	err := db.saveJsonToDisk()
-	db.mu.Lock()
 	return true, err
 }
 
@@ -147,8 +140,8 @@ func (db *CertStatus) RemoveExpired(now time.Time) error {
 	//atomically swap the map under write-lock ----------------------
 	db.mu.Lock()
 	db.StatusMap = newMap
-	db.mu.Unlock()
 	err := db.saveJsonToDisk()
+	db.mu.Unlock()
 
 	return err
 }
