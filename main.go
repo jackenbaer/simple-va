@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
+	"validation-authority/storage"
 )
 
 // Default, will be overwritten at build time by the pipeline
@@ -18,9 +19,9 @@ var (
 )
 var identity *Identity
 var ocspCertManager *OCSPCertManager
+var certStatus *storage.CertStatus
 var Logger *slog.Logger
 var Config *Configuration
-var OCSPDb *OCSPDatabase
 
 func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
@@ -75,6 +76,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	certStatus = &storage.CertStatus{CertStatusPath: Config.CertStatusPath}
+	err = certStatus.Init()
+	if err != nil {
+		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
+	}
 	go StartPrivateListener()
 	go StartPublicListener()
 }

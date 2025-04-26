@@ -13,6 +13,7 @@ type Configuration struct {
 	HostnamePublicApi  string `ini:"hostname_public_api"`
 	PrivateKeyPath     string `ini:"private_key_path"`
 	CertsFolderPath    string `ini:"certificate_path"`
+	CertStatusPath     string `ini:"cert_status_path"`
 }
 
 func (c *Configuration) LoadFromFile(f string) error {
