@@ -18,9 +18,9 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"simple-va/storage"
 	"testing"
 	"time"
-	"validation-authority/storage"
 
 	"golang.org/x/crypto/ocsp"
 )
