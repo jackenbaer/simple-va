@@ -93,15 +93,15 @@ func (c *Configuration) Validate() error {
 	}
 	_, err = os.Stat(filepath.Dir(c.PrivateKeyPath))
 	if os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("path '%q' not found: %w", c.CertsFolderPath, err)
 	}
 	_, err = os.Stat(c.CertsFolderPath)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("error opening file %q: %w", c.CertsFolderPath, err)
+		return fmt.Errorf("file '%q' not found: %w", c.CertsFolderPath, err)
 	}
 	_, err = os.Stat(c.HashedApiKeysPath)
 	if os.IsNotExist(err) {
-		return fmt.Errorf("error opening file %q: %w", c.HashedApiKeysPath, err)
+		return fmt.Errorf("file '%q' not found: %w", c.HashedApiKeysPath, err)
 	}
 
 	return nil
