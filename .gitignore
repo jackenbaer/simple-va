@@ -1,5 +1,6 @@
 *.pem 
 *.env
-simple-va
+simple-va/*
+!simple-va/.gitkeep
 bin
 tmp
