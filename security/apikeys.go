@@ -14,6 +14,13 @@ type APIKeyStore struct {
 	mu      sync.RWMutex
 }
 
+// NewAPIKeyStore works as a constructor. Can be used in Tests to initialize the hashMap.
+func NewAPIKeyStore(initHashMap map[string]string) *APIKeyStore {
+	return &APIKeyStore{
+		hashMap: initHashMap,
+	}
+}
+
 // NewAPIKeyStoreFromFile reads hashed apikeys from a json file and returns them as a map (key = hash, value = comment)
 func NewAPIKeyStoreFromFile(inputFile string) (*APIKeyStore, error) {
 	file, err := os.Open(inputFile)

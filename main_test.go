@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"simple-va/security"
 	"simple-va/storage"
 	"testing"
 	"time"
@@ -25,7 +26,15 @@ import (
 	"golang.org/x/crypto/ocsp"
 )
 
+func setupPrvHandler() *PrivateHTTPHandler {
+	apiKeyStore := security.NewAPIKeyStore(map[string]string{
+		"a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "API key is 123",
+	})
+	return &PrivateHTTPHandler{apiKeyStore: apiKeyStore}
+}
+
 func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
+	prvHandler := setupPrvHandler()
 	// Define a valid request payload
 	requestBody := createNewCsrRequest{
 		CommonName: "example.com",
@@ -38,12 +47,13 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	// Create a new HTTP request
 	req := httptest.NewRequest(http.MethodPost, "/createnewidentity", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	// Create a ResponseRecorder to capture the response
 	rr := httptest.NewRecorder()
 
 	// Call the handler
-	handler := http.HandlerFunc(HandleCreateNewCsr)
+	handler := http.HandlerFunc(prvHandler.HandleCreateNewCsr)
 	handler.ServeHTTP(rr, req)
 
 	// Check the status code
@@ -67,7 +77,7 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 }
 
 func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Certificate, caKey *ecdsa.PrivateKey) error {
-
+	prvHandler := setupPrvHandler()
 	requestBody := RemoveResponderRequest{
 		IssuerCert: string(CertToPEM(caCert)),
 		OcspCert:   string(CertToPEM(certToRevoke)),
@@ -80,10 +90,11 @@ func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Cert
 
 	req := httptest.NewRequest(http.MethodPost, "/removeresponder", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(HandleRemoveResponder)
+	handler := http.HandlerFunc(prvHandler.HandleRemoveResponder)
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
@@ -93,6 +104,7 @@ func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Cert
 }
 
 func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Certificate) error {
+	prvHandler := setupPrvHandler()
 	requestBody := UploadSignedCertRequest{
 		SignedCert: string(CertToPEM(certificate)),
 		IssuerCert: string(CertToPEM(issuer)),
@@ -104,10 +116,11 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 
 	req := httptest.NewRequest(http.MethodPost, "/createnewidentity", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(HandleUploadSignedCert)
+	handler := http.HandlerFunc(prvHandler.HandleUploadSignedCert)
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
@@ -117,12 +130,14 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 }
 
 func HandleListCertsTest() ([]string, error) {
+	prvHandler := setupPrvHandler()
 	req := httptest.NewRequest(http.MethodGet, "/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(HandleListCerts)
+	handler := http.HandlerFunc(prvHandler.HandleListCerts)
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
@@ -326,12 +341,14 @@ func TestCertgen(t *testing.T) {
 }
 
 func OCSPCerts() ([]string, error) {
+	prvHandler := setupPrvHandler()
 	req := httptest.NewRequest(http.MethodGet, "/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(HandleListCerts)
+	handler := http.HandlerFunc(prvHandler.HandleListCerts)
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
@@ -359,7 +376,7 @@ func TestMain(m *testing.M) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-	Config = &Configuration{
+	Config = Configuration{
 		HostnamePrivateApi: "localhost:8080",
 		HostnamePublicApi:  "localhost:8081",
 		PrivateKeyPath:     filepath.Join(tmpDir, "priv.pem"),
