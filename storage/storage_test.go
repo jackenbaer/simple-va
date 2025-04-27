@@ -16,21 +16,21 @@ func TestAddAndGet(t *testing.T) {
 
 	// 2) add two entries
 	exp := time.Now().Add(365 * 24 * time.Hour)
-	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "deadbeef", Status: 1, ExpirationDate: exp, RevocationDate: time.Now(), RevocationReason: "KeyCompromise"}); err != nil {
+	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "deadbeef", ExpirationDate: exp, RevocationDate: time.Now(), RevocationReason: "KeyCompromise"}); err != nil {
 		t.Fatalf("AddEntry failed: %v", err)
 	}
-	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "cafebabe", Status: 0, ExpirationDate: exp, RevocationDate: time.Time{}, RevocationReason: ""}); err != nil {
+	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "cafebabe", ExpirationDate: exp, RevocationDate: time.Time{}, RevocationReason: ""}); err != nil {
 		t.Fatalf("AddEntry failed: %v", err)
 	}
 
 	// 3) get & assert
 	e1, ok := db.GetEntry("issuerA", "deadbeef")
-	if !ok || e1.SerialNumber != "deadbeef" || e1.Status != 1 {
+	if !ok || e1.SerialNumber != "deadbeef" {
 		t.Fatalf("unexpected entry for deadbeef: %+v (found=%v)", e1, ok)
 	}
 
 	e2, ok := db.GetEntry("issuerA", "cafebabe")
-	if !ok || e2.Status != 0 {
+	if !ok {
 		t.Fatalf("unexpected entry for cafebabe: %+v (found=%v)", e2, ok)
 	}
 
@@ -58,7 +58,7 @@ func TestRemove(t *testing.T) {
 
 	// prepare data
 	exp := time.Now().Add(24 * time.Hour)
-	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "deadbeef", Status: 1, ExpirationDate: exp, RevocationDate: time.Now(), RevocationReason: "compromise"}); err != nil {
+	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "deadbeef", ExpirationDate: exp, RevocationDate: time.Now(), RevocationReason: "compromise"}); err != nil {
 		t.Fatalf("AddEntry failed: %v", err)
 	}
 	if _, ok := db.GetEntry("issuerA", "deadbeef"); !ok {
@@ -98,8 +98,8 @@ func TestRemoveExpired(t *testing.T) {
 	now := time.Now()
 
 	// add one expired, one still valid
-	db.AddEntry("issuerX", OCSPEntry{SerialNumber: "expiredSN", Status: 1, ExpirationDate: now.Add(-24 * time.Hour), RevocationDate: now.Add(-24 * time.Hour), RevocationReason: "superseded"})
-	db.AddEntry("issuerX", OCSPEntry{SerialNumber: "validSN", Status: 0, ExpirationDate: now.Add(24 * time.Hour), RevocationDate: time.Time{}, RevocationReason: ""})
+	db.AddEntry("issuerX", OCSPEntry{SerialNumber: "expiredSN", ExpirationDate: now.Add(-24 * time.Hour), RevocationDate: now.Add(-24 * time.Hour), RevocationReason: "superseded"})
+	db.AddEntry("issuerX", OCSPEntry{SerialNumber: "validSN", ExpirationDate: now.Add(24 * time.Hour), RevocationDate: time.Time{}, RevocationReason: ""})
 
 	// act
 	err := db.RemoveExpired(now)
