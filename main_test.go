@@ -9,7 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"log/slog"
 	"math/big"
@@ -313,7 +313,7 @@ func TestCertgen(t *testing.T) {
 	}
 
 	// Read the binary OCSP response.
-	ocspRespDER, err := ioutil.ReadAll(resp.Body)
+	ocspRespDER, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("failed to read OCSP response: %v", err)
 	}
@@ -382,7 +382,7 @@ func TestMain(m *testing.M) {
 		PrivateKeyPath:     filepath.Join(tmpDir, "priv.pem"),
 		CertsFolderPath:    filepath.Join(tmpDir, "certs"),
 		CertStatusPath:     filepath.Join(tmpDir, "statuslist.json"),
-		HashedApiKeysPath:  "./testdata/hashed_api_keys.json",
+		HashedApiKeysPath:  "./testdata/security/hashed_api_keys.json",
 	}
 
 	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig

@@ -1,17 +1,14 @@
-
-Simple Validation Authority 
-
-Root CA not required, instead only a ocsp signing ca is used 
+# Simple Validation Authority (simple-va)
 
 
+## Who is this project for ?
+This tool is for teams operating in segmented networks who need certificate revocation checks without deploying a full CA solution or exposing your root CA to this network. It provides:
 
-
-identity --> private key 
-identitiy id --> public key 
-can have multiple ocsp / crl certs 
-
-
-
+- A lightweight OCSP authority authorized only to sign OCSP responses
+- No direct access or exposure of your root CA
+- Simple, script-friendly data formats (PEM for certs, JSON for everything else)
+- A minimal Go implementation with very few dependencies
+- A documented REST API for easy integration and future migration to a more powerful CA system
 
 
 ## Getting Started – Registering an OCSP signer

@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 
@@ -24,7 +24,7 @@ func HandleOcsp(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Read the request body (DER-encoded OCSP request).
-	reqBytes, err := ioutil.ReadAll(r.Body)
+	reqBytes, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, "Error reading request body: "+err.Error(), http.StatusBadRequest)
 		return
