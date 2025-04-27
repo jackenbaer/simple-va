@@ -81,6 +81,7 @@ func (c *Configuration) LoadFromFile(f string) error {
 	*c = loadedCfg
 	return nil
 }
+
 func (c *Configuration) Validate() error {
 	_, err := url.Parse(Config.HostnamePrivateApi)
 	if err != nil {

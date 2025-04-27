@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"simple-va/security"
 )
 
 type subjectPublicKeyInfo struct {
@@ -19,10 +20,27 @@ type ListCertsResponse struct {
 	Certificates []string `json:"certificates"`
 }
 
-func HandleListCerts(w http.ResponseWriter, r *http.Request) {
+type PrivateHTTPHandler struct {
+	apiKeyStore *security.APIKeyStore
+}
+
+// IsAuthorizedUser checks whether a user has authorization for an endpoint
+// Implementation for protected endpoints in subnets
+func (p *PrivateHTTPHandler) IsAuthorizedUser(r *http.Request) bool {
+	key := r.Header.Get("X-API-Key")
+	return p.apiKeyStore.IsValidAPIKey(key)
+}
+
+func (p *PrivateHTTPHandler) HandleListCerts(w http.ResponseWriter, r *http.Request) {
+	if !p.IsAuthorizedUser(r) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	if !validateMethod(w, r, http.MethodGet) {
 		return
 	}
+
 	certs := []string{}
 	for _, v := range ocspCertManager.ListOCSPCerts() {
 		certs = append(certs, v.ToPEM())
@@ -37,7 +55,12 @@ type UploadSignedCertRequest struct {
 	IssuerCert string `json:"issuer_certificate"`
 }
 
-func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
+func (p *PrivateHTTPHandler) HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
+	if !p.IsAuthorizedUser(r) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -47,6 +70,7 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSONRequest(w, r, &req) {
 		return
 	}
+
 	ocspCert, err := PemToCert([]byte(req.SignedCert))
 	if err != nil {
 		Logger.Error("failed to parse ocsp certificate",
@@ -92,7 +116,12 @@ type RemoveResponderRequest struct {
 	OcspCert   string `json:"ocsp_certificate"`
 }
 
-func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
+func (p *PrivateHTTPHandler) HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
+	if !p.IsAuthorizedUser(r) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -146,7 +175,12 @@ type createNewCsrResponse struct {
 	CSR string `json:"csr"`
 }
 
-func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
+func (p *PrivateHTTPHandler) HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
+	if !p.IsAuthorizedUser(r) {
+		w.WriteHeader(http.StatusForbidden)
+		return
+	}
+
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
