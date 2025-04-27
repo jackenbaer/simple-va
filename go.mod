@@ -1,4 +1,4 @@
-module validation-authority
+module simple-va
 
 go 1.24.2
 

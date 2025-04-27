@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
-	"validation-authority/security"
-	"validation-authority/storage"
+	"simple-va/security"
+	"simple-va/storage"
 )
 
 // Default, will be overwritten at build time by the pipeline
