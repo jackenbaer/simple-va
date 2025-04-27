@@ -12,22 +12,22 @@ func TestNewAPIKeyStoreFromFile(t *testing.T) {
 	}{
 		{
 			name:      "valid file",
-			inputFile: "../testdata/hashed_api_keys.json",
+			inputFile: "../testdata/security/hashed_api_keys.json",
 			wantErr:   false,
 		},
 		{
 			name:      "empty file",
-			inputFile: "../testdata/invalid_hashed_api_keys_1.json",
+			inputFile: "../testdata/security/invalid_hashed_api_keys_1.json",
 			wantErr:   true,
 		},
 		{
 			name:      "typing error",
-			inputFile: "../testdata/invalid_hashed_api_keys_4.json",
+			inputFile: "../testdata/security/invalid_hashed_api_keys_4.json",
 			wantErr:   true,
 		},
 		{
 			name:      "file does not exist",
-			inputFile: "../testdata/invalid_hashed_api_keys_not_exist.json",
+			inputFile: "../testdata/security/invalid_hashed_api_keys_not_exist.json",
 			wantErr:   true,
 		},
 	}
@@ -80,7 +80,7 @@ func TestIsValidApiKey(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	APIKeyStore, err := NewAPIKeyStoreFromFile("../testdata/hashed_api_keys.json")
+	APIKeyStore, err := NewAPIKeyStoreFromFile("../testdata/security/hashed_api_keys.json")
 	if err != nil {
 		t.Errorf("Preparing TestIsValidApiKey. Error = %v", err)
 	}
@@ -102,22 +102,22 @@ func TestAllAPIKeysValid(t *testing.T) {
 	}{
 		{
 			name:      "valid file",
-			inputFile: "../testdata/hashed_api_keys.json",
+			inputFile: "../testdata/security/hashed_api_keys.json",
 			wantErr:   false,
 		},
 		{
 			name:      "empty file",
-			inputFile: "../testdata/invalid_hashed_api_keys_2.json",
+			inputFile: "../testdata/security/invalid_hashed_api_keys_2.json",
 			wantErr:   true,
 		},
 		{
 			name:      "typing error",
-			inputFile: "../testdata/invalid_hashed_api_keys_3.json",
+			inputFile: "../testdata/security/invalid_hashed_api_keys_3.json",
 			wantErr:   true,
 		},
 		{
 			name:      "uppercase chars in key",
-			inputFile: "../testdata/invalid_hashed_api_keys_5.json",
+			inputFile: "../testdata/security/invalid_hashed_api_keys_5.json",
 			wantErr:   true,
 		},
 	}
