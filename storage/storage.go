@@ -2,7 +2,6 @@ package storage
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"sync"
 	"time"
@@ -71,22 +70,17 @@ func (db *CertStatus) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
 	return nil
 }
 
-func (db *CertStatus) GetEntry(issuerKeyHash, serialNumber string) (OCSPEntry, error) {
+func (db *CertStatus) GetEntry(issuerKeyHash, serialNumber string) (OCSPEntry, bool) {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 
-	serials, ok := db.StatusMap[issuerKeyHash]
-	if !ok {
-		return OCSPEntry{}, errors.New("OCSP entry not found")
-
+	serials, exists := db.StatusMap[issuerKeyHash]
+	if !exists {
+		return OCSPEntry{}, false
 	}
 
-	entry, ok := serials[serialNumber]
-	if !ok {
-		return OCSPEntry{}, errors.New("OCSP entry not found")
-	}
-
-	return entry, nil
+	entry, found := serials[serialNumber]
+	return entry, found
 }
 
 func (db *CertStatus) Remove(issuerKeyHash, serialNumber string) (bool, error) {
