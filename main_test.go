@@ -365,7 +365,7 @@ func TestMain(m *testing.M) {
 		PrivateKeyPath:     filepath.Join(tmpDir, "priv.pem"),
 		CertsFolderPath:    filepath.Join(tmpDir, "certs"),
 		CertStatusPath:     filepath.Join(tmpDir, "statuslist.json"),
-		HashedApiKeysPath:  "./testdata/hashed_api_keys.json",
+		HashedApiKeysPath:  "./testdata/security/hashed_api_keys.json",
 	}
 
 	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig
