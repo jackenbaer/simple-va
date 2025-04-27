@@ -24,20 +24,14 @@ func TestAddAndGet(t *testing.T) {
 	}
 
 	// 3) get & assert
-	e1, err := db.GetEntry("issuerA", "deadbeef")
-	if err != nil {
-		t.Fatalf("unexpected error for deadbeef: %v", err)
-	}
-	if e1.SerialNumber != "deadbeef" || e1.Status != 1 {
-		t.Fatalf("unexpected entry for deadbeef: %+v", e1)
+	e1, ok := db.GetEntry("issuerA", "deadbeef")
+	if !ok || e1.SerialNumber != "deadbeef" || e1.Status != 1 {
+		t.Fatalf("unexpected entry for deadbeef: %+v (found=%v)", e1, ok)
 	}
 
-	e2, err := db.GetEntry("issuerA", "cafebabe")
-	if err != nil {
-		t.Fatalf("unexpected error for cafebabe: %v", err)
-	}
-	if e2.Status != 0 {
-		t.Fatalf("unexpected entry for cafebabe: %+v", e2)
+	e2, ok := db.GetEntry("issuerA", "cafebabe")
+	if !ok || e2.Status != 0 {
+		t.Fatalf("unexpected entry for cafebabe: %+v (found=%v)", e2, ok)
 	}
 
 	// 4) reload from disk to prove JSON got written
@@ -48,8 +42,8 @@ func TestAddAndGet(t *testing.T) {
 	if err := dbReload.Init(); err != nil {
 		t.Fatalf("Init failed: %v", err)
 	}
-	if _, err := dbReload.GetEntry("issuerA", "deadbeef"); err != nil {
-		t.Fatalf("entry missing after reload: %v", err)
+	if _, ok := dbReload.GetEntry("issuerA", "deadbeef"); !ok {
+		t.Fatalf("entry missing after reload")
 	}
 }
 
@@ -67,8 +61,8 @@ func TestRemove(t *testing.T) {
 	if err := db.AddEntry("issuerA", OCSPEntry{SerialNumber: "deadbeef", Status: 1, ExpirationDate: exp, RevocationDate: time.Now(), RevocationReason: "compromise"}); err != nil {
 		t.Fatalf("AddEntry failed: %v", err)
 	}
-	if _, err := db.GetEntry("issuerA", "deadbeef"); err != nil {
-		t.Fatalf("entry missing after add: %v", err)
+	if _, ok := db.GetEntry("issuerA", "deadbeef"); !ok {
+		t.Fatalf("entry missing after add")
 	}
 
 	// --- remove once ---
@@ -79,7 +73,7 @@ func TestRemove(t *testing.T) {
 	if !ok {
 		t.Fatalf("Remove should return true for existing entry")
 	}
-	if _, err := db.GetEntry("issuerA", "deadbeef"); err == nil {
+	if _, ok := db.GetEntry("issuerA", "deadbeef"); ok {
 		t.Fatalf("entry still present after Remove")
 	}
 
@@ -108,16 +102,17 @@ func TestRemoveExpired(t *testing.T) {
 	db.AddEntry("issuerX", OCSPEntry{SerialNumber: "validSN", Status: 0, ExpirationDate: now.Add(24 * time.Hour), RevocationDate: time.Time{}, RevocationReason: ""})
 
 	// act
-	if err := db.RemoveExpired(now); err != nil {
+	err := db.RemoveExpired(now)
+	if err != nil {
 		t.Fatalf("RemoveExpired error: %v", err)
 	}
 
 	// verify: expired gone, valid remains
-	if _, err := db.GetEntry("issuerX", "expiredSN"); err == nil {
+	if _, ok := db.GetEntry("issuerX", "expiredSN"); ok {
 		t.Fatalf("expired entry still present after RemoveExpired")
 	}
-	if _, err := db.GetEntry("issuerX", "validSN"); err != nil {
-		t.Fatalf("valid entry missing after RemoveExpired: %v", err)
+	if _, ok := db.GetEntry("issuerX", "validSN"); !ok {
+		t.Fatalf("valid entry missing after RemoveExpired")
 	}
 
 	// optionally reload from disk to ensure persistence
@@ -128,10 +123,10 @@ func TestRemoveExpired(t *testing.T) {
 	if err := reloaded.Init(); err != nil {
 		t.Fatalf("Init after save failed: %v", err)
 	}
-	if _, err := reloaded.GetEntry("issuerX", "validSN"); err != nil {
-		t.Fatalf("valid entry missing after reload: %v", err)
+	if _, ok := reloaded.GetEntry("issuerX", "validSN"); !ok {
+		t.Fatalf("valid entry missing after reload")
 	}
-	if _, err := reloaded.GetEntry("issuerX", "expiredSN"); err == nil {
+	if _, ok := reloaded.GetEntry("issuerX", "expiredSN"); ok {
 		t.Fatalf("expired entry resurrected after reload")
 	}
 }
