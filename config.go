@@ -97,11 +97,11 @@ func (c *Configuration) Validate() error {
 	}
 	_, err = os.Stat(c.CertsFolderPath)
 	if os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("error opening file %q: %w", c.CertsFolderPath, err)
 	}
 	_, err = os.Stat(c.HashedApiKeysPath)
 	if os.IsNotExist(err) {
-		return err
+		return fmt.Errorf("error opening file %q: %w", c.HashedApiKeysPath, err)
 	}
 
 	return nil
