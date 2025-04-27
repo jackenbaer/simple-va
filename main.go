@@ -94,5 +94,5 @@ func main() {
 		os.Exit(1)
 	}
 	go StartPrivateListener()
-	go StartPublicListener()
+	StartPublicListener()
 }
