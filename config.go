@@ -34,23 +34,24 @@ func parseINI(path string) (map[string]string, error) {
 	return out, s.Err()
 }
 
-// loadConfig fills cfg from a map by matching the struct's `ini` tags.
-func loadConfig(m map[string]string, cfg *Configuration) error {
-	v := reflect.ValueOf(cfg).Elem()
+func loadConfig(m map[string]string) (Configuration, error) {
+	var cfg Configuration
+	v := reflect.ValueOf(&cfg).Elem()
 	t := v.Type()
 
-	for i := 0; i < v.NumField(); i++ {
-		tag := t.Field(i).Tag.Get("ini")
+	for i := 0; i < t.NumField(); i++ {
+		field := t.Field(i)
+		tag := field.Tag.Get("ini")
 		if tag == "" {
 			continue
 		}
-		if val, ok := m[tag]; ok {
-			v.Field(i).SetString(val)
-		} else {
-			return fmt.Errorf("missing ini key %q", tag)
+		val, ok := m[tag]
+		if !ok {
+			return Configuration{}, fmt.Errorf("missing ini key %q", tag)
 		}
+		v.Field(i).SetString(val)
 	}
-	return nil
+	return cfg, nil
 }
 
 type Configuration struct {
@@ -63,22 +64,23 @@ type Configuration struct {
 }
 
 func (c *Configuration) LoadFromFile(f string) error {
-	absConfigPath, err := filepath.Abs(f)
+	absPath, err := filepath.Abs(f)
 	if err != nil {
 		return err
 	}
-	iniData, err := parseINI(absConfigPath)
+	iniData, err := parseINI(absPath)
 	if err != nil {
 		return err
 	}
 
-	var cfg Configuration
-	if err := loadConfig(iniData, &cfg); err != nil {
+	loadedCfg, err := loadConfig(iniData)
+	if err != nil {
 		return err
 	}
+
+	*c = loadedCfg
 	return nil
 }
-
 func (c *Configuration) Validate() error {
 	_, err := url.Parse(Config.HostnamePrivateApi)
 	if err != nil {
