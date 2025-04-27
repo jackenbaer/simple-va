@@ -58,9 +58,8 @@ func HandleOcsp(w http.ResponseWriter, r *http.Request) {
 		fmt.Println("Key exists! Value:", value)
 		issuerCert := value.IssuerCert
 		responderCert := value.OcspCert
-		responderKey := identity.GetPrivateKey()
 		// Create the OCSP response. The response is signed using the responder's key.
-		ocspBytes, err := ocsp.CreateResponse(issuerCert, responderCert, template, responderKey)
+		ocspBytes, err := identity.CreateResponse(issuerCert, responderCert, template)
 		if err != nil {
 			http.Error(w, "Failed to create OCSP response: "+err.Error(), http.StatusInternalServerError)
 			return
