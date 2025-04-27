@@ -83,23 +83,23 @@ func (c *Configuration) LoadFromFile(f string) error {
 }
 
 func (c *Configuration) Validate() error {
-	_, err := url.Parse(Config.HostnamePrivateApi)
+	_, err := url.Parse(c.HostnamePrivateApi)
 	if err != nil {
 		return err
 	}
-	_, err = url.Parse(Config.HostnamePublicApi)
+	_, err = url.Parse(c.HostnamePublicApi)
 	if err != nil {
 		return err
 	}
-	_, err = os.Stat(filepath.Dir(Config.PrivateKeyPath))
+	_, err = os.Stat(filepath.Dir(c.PrivateKeyPath))
 	if os.IsNotExist(err) {
 		return err
 	}
-	_, err = os.Stat(Config.CertsFolderPath)
+	_, err = os.Stat(c.CertsFolderPath)
 	if os.IsNotExist(err) {
 		return err
 	}
-	_, err = os.Stat(Config.HashedApiKeysPath)
+	_, err = os.Stat(c.HashedApiKeysPath)
 	if os.IsNotExist(err) {
 		return err
 	}
