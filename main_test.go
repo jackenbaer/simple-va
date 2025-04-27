@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"runtime/debug"
 	"testing"
 	"time"
@@ -351,14 +352,25 @@ func TestMain(m *testing.M) {
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
-	Config.LoadFromFile("./config.ini")
-	err := os.MkdirAll(Config.CertsFolderPath, os.ModePerm)
+	tmpDir, err := os.MkdirTemp("", "simple-va") // system-tmp, automatisch eindeutig
 	if err != nil {
-		log.Fatalf("Failed to create test folder  %v", err)
+		Logger.Error("cannot create temp dir", "error", err)
+		os.Exit(1)
 	}
-	err = Config.Validate()
+	defer os.RemoveAll(tmpDir)
+
+	Config = &Configuration{
+		HostnamePrivateApi: "localhost:8080",
+		HostnamePublicApi:  "localhost:8081",
+		PrivateKeyPath:     filepath.Join(tmpDir, "priv.pem"),
+		CertsFolderPath:    filepath.Join(tmpDir, "certs"),
+		CertStatusPath:     filepath.Join(tmpDir, "statuslist.json"),
+		HashedApiKeysPath:  "./testdata/hashed_api_keys.json",
+	}
+
+	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig
 	if err != nil {
-		Logger.Error("Failed to validate configuration", "error", err, "stack", string(debug.Stack()))
+		Logger.Error("cannot create temp dir", "error", err)
 		os.Exit(1)
 	}
 
