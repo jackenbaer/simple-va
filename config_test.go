@@ -19,7 +19,7 @@ func TestConfigurationLoadAndValidate(t *testing.T) {
 		},
 		{
 			name:      "valid config",
-			inputFile: "./testdata/config/valid_config.ini",
+			inputFile: "testdata/config/valid_config.ini",
 			wantErr:   false,
 		},
 		{
