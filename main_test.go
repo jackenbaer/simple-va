@@ -9,7 +9,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"log/slog"
 	"math/big"
@@ -298,7 +298,7 @@ func TestCertgen(t *testing.T) {
 	}
 
 	// Read the binary OCSP response.
-	ocspRespDER, err := ioutil.ReadAll(resp.Body)
+	ocspRespDER, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("failed to read OCSP response: %v", err)
 	}
