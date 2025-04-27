@@ -19,6 +19,7 @@ import (
 	"runtime/debug"
 	"testing"
 	"time"
+	"validation-authority/storage"
 
 	"golang.org/x/crypto/ocsp"
 )
@@ -375,6 +376,12 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
+	CertStatus = &storage.CertStatus{CertStatusPath: Config.CertStatusPath}
+	err = CertStatus.Init()
+	if err != nil {
+		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
+	}
 	code := m.Run()
 
 	go StartPublicListener()

@@ -9,7 +9,6 @@ import (
 
 // OCSPEntry represents a single OCSP record
 type OCSPEntry struct {
-	Status           int       `json:"status"`            //Good = 0, Revoked = 1, Unknown = 2, here just revoked or not in list
 	ExpirationDate   time.Time `json:"expiration_date"`   // Certificate expiration date
 	RevocationDate   time.Time `json:"revocation_date"`   // Revocation date
 	RevocationReason string    `json:"revocation_reason"` // Revocation reason
@@ -70,7 +69,7 @@ func (db *CertStatus) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
 	return nil
 }
 
-func (db *CertStatus) GetEntry(issuerKeyHash, serialNumber string) (OCSPEntry, bool) {
+func (db *CertStatus) GetEntry(issuerKeyHash string, serialNumber string) (OCSPEntry, bool) {
 	db.mu.RLock()
 	defer db.mu.RUnlock()
 

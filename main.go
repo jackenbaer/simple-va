@@ -20,7 +20,7 @@ var (
 )
 var identity *Identity
 var ocspCertManager *OCSPCertManager
-var certStatus *storage.CertStatus
+var CertStatus *storage.CertStatus
 var Logger *slog.Logger
 var Config *Configuration
 
@@ -87,8 +87,8 @@ func main() {
 		os.Exit(1)
 	}
 
-	certStatus = &storage.CertStatus{CertStatusPath: Config.CertStatusPath}
-	err = certStatus.Init()
+	CertStatus = &storage.CertStatus{CertStatusPath: Config.CertStatusPath}
+	err = CertStatus.Init()
 	if err != nil {
 		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
