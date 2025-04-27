@@ -99,7 +99,7 @@ func LoadOCSPResponderFromFile(filename string) (*OCSPResponder, error) {
 
 type OCSPCertManager struct {
 	certsFolderPath string
-	responders      map[string]OCSPResponder //hashed(IssuerKeyHash) -> Responder
+	responders      map[string]OCSPResponder //IssuerKeyHash -> Responder
 }
 
 func (o *OCSPCertManager) Init() error {
@@ -196,4 +196,9 @@ func (o *OCSPCertManager) AddResponder(r OCSPResponder) error {
 	}
 
 	return nil
+}
+
+func (db *OCSPCertManager) IssuerExists(issuerKeyHash string) bool {
+	_, exists := db.responders[issuerKeyHash]
+	return exists
 }

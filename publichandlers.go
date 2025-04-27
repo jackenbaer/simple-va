@@ -38,40 +38,60 @@ func HandleOcsp(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Printf("OCSP Request: %v", ocspReq)
 
-	// For demonstration purposes, we assume the certificate status is "good".
-	// In a real implementation, you would check ocspReq.SerialNumber against your revocation data.
+	//TODO support more hash algorithmss
+	fmt.Printf("hashalgorithm: %s\n", ocspReq.HashAlgorithm.String())
+
+	issuerKeyHash := hex.EncodeToString(ocspReq.IssuerKeyHash[:])
+	fmt.Printf("hash: %s\n", issuerKeyHash)
+
+	issuerExists := ocspCertManager.IssuerExists(issuerKeyHash)
+
+	entry, entryExists := CertStatus.GetEntry(issuerKeyHash, ocspReq.SerialNumber.String())
+
+	var certStatus int
+	if !entryExists && issuerExists { // cert is not revoked
+		certStatus = ocsp.Good
+		Logger.Info("OCSP status is good.",
+			"IssuerKeyHash", issuerKeyHash,
+			"SerialNumber", ocspReq.SerialNumber.String(),
+		)
+	} else if entryExists && issuerExists { // cert is revoked
+		certStatus = ocsp.Revoked
+		Logger.Info("OCSP status is revoked.",
+			"IssuerKeyHash", issuerKeyHash,
+			"ExpirationDate", entry.ExpirationDate,
+			"RevocationDate", entry.RevocationDate,
+			"RevocationReason", entry.RevocationReason,
+			"SerialNumber", entry.SerialNumber,
+		)
+
+	} else if !entryExists && !issuerExists { // unkown issuer not controlled by this va
+		Logger.Info("OCSP status is unkown. IssuerKeyHash not known",
+			"IssuerKeyHash", issuerKeyHash)
+
+		w.Header().Set("Content-Type", "application/ocsp-response")
+		_, _ = w.Write(ocsp.UnauthorizedErrorResponse)
+		return
+	}
+
 	template := ocsp.Response{
-		Status:       ocsp.Good,
+		Status:       certStatus,
 		SerialNumber: ocspReq.SerialNumber,
 		ThisUpdate:   time.Now(),
 		NextUpdate:   time.Now().Add(24 * time.Hour),
 	}
+	value := ocspCertManager.responders[issuerKeyHash]
+	issuerCert := value.IssuerCert
+	responderCert := value.OcspCert
 
-	//TODO support more hash algorithmss
-	fmt.Printf("hashalgorithm: %s\n", ocspReq.HashAlgorithm.String())
-
-	k := hex.EncodeToString(ocspReq.IssuerKeyHash[:])
-	fmt.Printf("hash: %s\n", k)
-
-	// Check if the key exists
-	if value, exists := ocspCertManager.responders[k]; exists {
-		fmt.Println("Key exists! Value:", value)
-		issuerCert := value.IssuerCert
-		responderCert := value.OcspCert
-		responderKey := identity.GetPrivateKey()
-		// Create the OCSP response. The response is signed using the responder's key.
-		ocspBytes, err := ocsp.CreateResponse(issuerCert, responderCert, template, responderKey)
-		if err != nil {
-			http.Error(w, "Failed to create OCSP response: "+err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		// Write the OCSP response with the correct Content-Type.
-		w.Header().Set("Content-Type", "application/ocsp-response")
-		w.Write(ocspBytes)
-
-	} else {
-		fmt.Println("Key does not exist.")
+	// Create the OCSP response. The response is signed using the responder's key.
+	ocspBytes, err := identity.CreateResponse(issuerCert, responderCert, template)
+	if err != nil {
+		http.Error(w, "Failed to create OCSP response: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
+	// Write the OCSP response with the correct Content-Type.
+	w.Header().Set("Content-Type", "application/ocsp-response")
+	w.Write(ocspBytes)
 
 }

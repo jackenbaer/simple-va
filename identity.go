@@ -9,6 +9,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+
+	"golang.org/x/crypto/ocsp"
 )
 
 type Identity struct {
@@ -16,9 +18,8 @@ type Identity struct {
 	privateKey     *ecdsa.PrivateKey
 }
 
-// TODO Remove this
-func (i *Identity) GetPrivateKey() *ecdsa.PrivateKey {
-	return i.privateKey
+func (i *Identity) CreateResponse(issuerCert *x509.Certificate, responderCert *x509.Certificate, template ocsp.Response) ([]byte, error) {
+	return ocsp.CreateResponse(issuerCert, responderCert, template, i.privateKey)
 }
 
 func (i *Identity) PrivateKeyMatchesCert(cert *x509.Certificate) error {
