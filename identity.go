@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"golang.org/x/crypto/ocsp"
 )
@@ -54,26 +55,18 @@ func (i *Identity) GetPublicKey() (*ecdsa.PublicKey, error) {
 func (i *Identity) LoadOrCreatePrivateKey() error {
 
 	privateKeyFullpath := i.PrivateKeyPath
-
-	_, err := os.Stat(privateKeyFullpath)
-	if err == nil {
-		data, err := os.ReadFile(privateKeyFullpath)
-		if err != nil {
-			return err
-		}
-
+	if data, err := os.ReadFile(privateKeyFullpath); err == nil {
 		block, _ := pem.Decode(data)
 		if block == nil {
 			return fmt.Errorf("failed to decode PEM block from %s", privateKeyFullpath)
 		}
-
 		key, err := x509.ParseECPrivateKey(block.Bytes)
 		if err != nil {
 			return err
 		}
 		i.privateKey = key
-	}
-	if err != nil && !os.IsNotExist(err) {
+		return nil
+	} else if !os.IsNotExist(err) {
 		return err
 	}
 
@@ -94,6 +87,9 @@ func (i *Identity) LoadOrCreatePrivateKey() error {
 		Bytes: keyBytes,
 	}
 
+	if err := os.MkdirAll(filepath.Dir(privateKeyFullpath), 0o755); err != nil { // falls Unterverz. fehlt
+		return err
+	}
 	file, err := os.Create(privateKeyFullpath)
 	if err != nil {
 		return err
