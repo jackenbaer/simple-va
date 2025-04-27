@@ -8,7 +8,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 )
@@ -111,12 +110,14 @@ func (o *OCSPCertManager) Init() error {
 }
 
 func (o *OCSPCertManager) LoadCertsFromDisk() error {
-	files, err := ioutil.ReadDir(o.certsFolderPath)
+	files, err := os.ReadDir(o.certsFolderPath)
 	if err != nil {
 		return err
 	}
-
 	for _, file := range files {
+		if file.IsDir() {
+			continue
+		}
 		if filepath.Ext(file.Name()) == ".pem" {
 			filePath := filepath.Join(o.certsFolderPath, file.Name())
 
