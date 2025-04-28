@@ -45,7 +45,7 @@ jobs:
   build:
     if: ${{ inputs.do-build }}
     name: Build & Inject Version
-    needs: [test, vulncheck]
+    needs: [test, vulncheck, check-api-version]    
     runs-on: ubuntu-latest
     strategy:
       matrix:
