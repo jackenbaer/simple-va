@@ -18,13 +18,13 @@ type OCSPEntry struct {
 // CertStatus manages the OCSP entries
 type CertStatus struct {
 	StatusMap      map[string]map[string]OCSPEntry // IssuerKeyHash → SerialNumber → OCSPEntry
-	mu             sync.RWMutex                    // Allows concurrent reads, exclusive writes
+	Mu             sync.RWMutex                    // Allows concurrent reads, exclusive writes
 	CertStatusPath string
 }
 
 func (db *CertStatus) Init() error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.Mu.Lock()
+	defer db.Mu.Unlock()
 
 	file, err := os.Open(db.CertStatusPath)
 	if err != nil {
@@ -54,8 +54,8 @@ func (db *CertStatus) saveJsonToDisk() error {
 }
 
 func (db *CertStatus) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.Mu.Lock()
+	defer db.Mu.Unlock()
 
 	if _, exists := db.StatusMap[issuerKeyHash]; !exists {
 		db.StatusMap[issuerKeyHash] = make(map[string]OCSPEntry)
@@ -70,8 +70,8 @@ func (db *CertStatus) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
 }
 
 func (db *CertStatus) GetEntry(issuerKeyHash string, serialNumber string) (OCSPEntry, bool) {
-	db.mu.RLock()
-	defer db.mu.RUnlock()
+	db.Mu.RLock()
+	defer db.Mu.RUnlock()
 
 	serials, exists := db.StatusMap[issuerKeyHash]
 	if !exists {
@@ -83,8 +83,8 @@ func (db *CertStatus) GetEntry(issuerKeyHash string, serialNumber string) (OCSPE
 }
 
 func (db *CertStatus) Remove(issuerKeyHash, serialNumber string) (bool, error) {
-	db.mu.Lock()
-	defer db.mu.Unlock()
+	db.Mu.Lock()
+	defer db.Mu.Unlock()
 
 	serials, ok := db.StatusMap[issuerKeyHash]
 	if !ok {
@@ -105,7 +105,7 @@ func (db *CertStatus) Remove(issuerKeyHash, serialNumber string) (bool, error) {
 // RemoveExpired drops every entry whose ExpirationDate is before now without blocking parallel readers while it scans.
 func (db *CertStatus) RemoveExpired(now time.Time) error {
 	//create copy of map under read lock
-	db.mu.RLock()
+	db.Mu.RLock()
 	newMap := make(map[string]map[string]OCSPEntry, len(db.StatusMap))
 	removed := 0
 
@@ -122,17 +122,17 @@ func (db *CertStatus) RemoveExpired(now time.Time) error {
 			newMap[issuer][sn] = entry
 		}
 	}
-	db.mu.RUnlock()
+	db.Mu.RUnlock()
 
 	if removed == 0 {
 		return nil
 	}
 
 	//atomically swap the map under write-lock
-	db.mu.Lock()
+	db.Mu.Lock()
 	db.StatusMap = newMap
 	err := db.saveJsonToDisk()
-	db.mu.Unlock()
+	db.Mu.Unlock()
 
 	return err
 }
