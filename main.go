@@ -14,9 +14,10 @@ import (
 
 // Default, will be overwritten at build time by the pipeline
 var (
-	Version   = "dev"
-	Commit    = "none"
-	BuildTime = "unknown"
+	Version    = "dev"
+	Commit     = "none"
+	BuildTime  = "unknown"
+	ApiVersion = "v1"
 )
 var identity *Identity
 var ocspCertManager *OCSPCertManager
@@ -52,7 +53,7 @@ func main() {
 	flag.Parse()
 
 	if versionFlag {
-		fmt.Printf("%s,%s,%s\n", Version, Commit, BuildTime)
+		fmt.Printf("%s,%s,%s,%s\n", Version, Commit, BuildTime, ApiVersion)
 		os.Exit(0)
 	}
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
