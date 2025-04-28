@@ -1,5 +1,5 @@
 # Simple Validation Authority (simple-va)
-
+THIS PROJECT IS CURRENTLY IN A BETA STATUS.
 
 ## Who is this project for ?
 This tool is for teams operating in segmented networks who need certificate revocation checks without deploying a full CA solution or exposing your root CA to this network. It provides:
@@ -59,3 +59,6 @@ jq -Rs -n \
 
 Now you are ready to go !
 ---
+
+## REST endpoint documention
+Visit https://simple-va.de/swagger to take a look at all provided REST API endpoint including expected json formats. 
