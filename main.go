@@ -14,9 +14,10 @@ import (
 
 // Default, will be overwritten at build time by the pipeline
 var (
-	Version   = "dev"
-	Commit    = "none"
-	BuildTime = "unknown"
+	Version    = "dev"
+	Commit     = "none"
+	BuildTime  = "unknown"
+	ApiVersion = "v1"
 )
 var identity *Identity
 var ocspCertManager *OCSPCertManager
@@ -30,10 +31,10 @@ func StartPublicListener() {
 }
 
 func StartPrivateListener() {
-	http.HandleFunc("/createnewcsr", HandleCreateNewCsr)
-	http.HandleFunc("/uploadsignedcert", HandleUploadSignedCert)
-	http.HandleFunc("/removeresponder", HandleRemoveResponder)
-	http.HandleFunc("/listcerts", HandleListCerts)
+	http.HandleFunc(fmt.Sprintf("/%s/createnewcsr", ApiVersion), HandleCreateNewCsr)
+	http.HandleFunc(fmt.Sprintf("/%s/uploadsignedcert", ApiVersion), HandleUploadSignedCert)
+	http.HandleFunc(fmt.Sprintf("/%s/removeresponder", ApiVersion), HandleRemoveResponder)
+	http.HandleFunc(fmt.Sprintf("/%s/listcerts", ApiVersion), HandleListCerts)
 
 	err := http.ListenAndServe(Config.HostnamePublicApi, nil)
 	if err != nil {
