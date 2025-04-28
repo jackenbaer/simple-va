@@ -52,7 +52,7 @@ func main() {
 	flag.Parse()
 
 	if versionFlag {
-		fmt.Printf("%s,%s,%s", Version, Commit, BuildTime)
+		fmt.Printf("%s,%s,%s\n", Version, Commit, BuildTime)
 		os.Exit(0)
 	}
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
