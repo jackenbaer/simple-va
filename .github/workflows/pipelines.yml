@@ -79,7 +79,6 @@ jobs:
     if: ${{ inputs.do-build }}
     name: Check API version
     runs-on: ubuntu-latest
-    needs: [test, vulncheck]
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
