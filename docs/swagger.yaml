@@ -1,0 +1,138 @@
+definitions:
+  main.ListCertsResponse:
+    properties:
+      certificates:
+        items:
+          type: string
+        type: array
+    type: object
+  main.RemoveResponderRequest:
+    properties:
+      issuer_certificate:
+        type: string
+      ocsp_certificate:
+        type: string
+    type: object
+  main.UploadSignedCertRequest:
+    properties:
+      issuer_certificate:
+        type: string
+      signed_certificate:
+        type: string
+    type: object
+  main.createNewCsrRequest:
+    properties:
+      common_name:
+        type: string
+    type: object
+  main.createNewCsrResponse:
+    properties:
+      csr:
+        type: string
+    type: object
+info:
+  contact: {}
+paths:
+  /certificates:
+    get:
+      description: Retrieves all OCSP responder certificates stored in the manager,
+        returned as PEM-encoded strings.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ListCertsResponse'
+      summary: List all OCSP certificates
+      tags:
+      - certificates
+  /certificates/responder:
+    post:
+      consumes:
+      - application/json
+      description: Removes an OCSP responder identified by its issuer certificate
+        and responder certificate (both PEM-encoded).
+      parameters:
+      - description: Issuer cert and OCSP cert in PEM format
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.RemoveResponderRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Certificate successfully removed
+          schema:
+            type: string
+        "400":
+          description: Bad request (e.g. invalid JSON)
+          schema:
+            type: string
+        "500":
+          description: Failed to remove certificate
+          schema:
+            type: string
+      summary: Remove an OCSP responder
+      tags:
+      - certificates
+  /certificates/signed:
+    post:
+      consumes:
+      - application/json
+      description: Uploads a signed OCSP responder certificate along with its issuer
+        certificate (both PEM-encoded).
+      parameters:
+      - description: Signed OCSP cert and issuer cert in PEM format
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.UploadSignedCertRequest'
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Certificate uploaded successfully
+          schema:
+            type: string
+        "400":
+          description: Bad request (e.g. missing fields)
+          schema:
+            type: string
+        "500":
+          description: Failed to upload certificate
+          schema:
+            type: string
+      summary: Upload a signed OCSP responder certificate
+      tags:
+      - certificates
+  /csr:
+    post:
+      consumes:
+      - application/json
+      description: Generates a new ECDSA CSR for the given common name.
+      parameters:
+      - description: Common name for the CSR
+        in: body
+        name: payload
+        required: true
+        schema:
+          $ref: '#/definitions/main.createNewCsrRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.createNewCsrResponse'
+        "400":
+          description: CommonName is required or CSR generation failed
+          schema:
+            type: string
+      summary: Create a new Certificate Signing Request (CSR)
+      tags:
+      - csr
+swagger: "2.0"

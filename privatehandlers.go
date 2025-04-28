@@ -1,3 +1,7 @@
+// @title           OCSP Certificate Manager API
+// @version         1.0.0
+// @description     API for managing OCSP responder certificates and CSRs.
+// @BasePath        /v1
 package main
 
 import (
@@ -19,6 +23,13 @@ type ListCertsResponse struct {
 	Certificates []string `json:"certificates"`
 }
 
+// HandleListCerts
+// @Summary      List all OCSP certificates
+// @Description  Retrieves all OCSP responder certificates stored in the manager, returned as PEM-encoded strings.
+// @Tags         certificates
+// @Produce      application/json
+// @Success      200  {object}  ListCertsResponse
+// @Router       /certificates [get]
 func HandleListCerts(w http.ResponseWriter, r *http.Request) {
 	if !validateMethod(w, r, http.MethodGet) {
 		return
@@ -37,6 +48,17 @@ type UploadSignedCertRequest struct {
 	IssuerCert string `json:"issuer_certificate"`
 }
 
+// HandleUploadSignedCert
+// @Summary      Upload a signed OCSP responder certificate
+// @Description  Uploads a signed OCSP responder certificate along with its issuer certificate (both PEM-encoded).
+// @Tags         certificates
+// @Accept       application/json
+// @Produce      text/plain
+// @Param        payload  body  UploadSignedCertRequest  true  "Signed OCSP cert and issuer cert in PEM format"
+// @Success      200      {string}  string  "Certificate uploaded successfully"
+// @Failure      400      {string}  string  "Bad request (e.g. missing fields)"
+// @Failure      500      {string}  string  "Failed to upload certificate"
+// @Router       /certificates/signed [post]
 func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	if !validateMethod(w, r, http.MethodPost) {
 		return
@@ -92,6 +114,17 @@ type RemoveResponderRequest struct {
 	OcspCert   string `json:"ocsp_certificate"`
 }
 
+// HandleRemoveResponder
+// @Summary      Remove an OCSP responder
+// @Description  Removes an OCSP responder identified by its issuer certificate and responder certificate (both PEM-encoded).
+// @Tags         certificates
+// @Accept       application/json
+// @Produce      text/plain
+// @Param        payload  body  RemoveResponderRequest  true  "Issuer cert and OCSP cert in PEM format"
+// @Success      200      {string}  string  "Certificate successfully removed"
+// @Failure      400      {string}  string  "Bad request (e.g. invalid JSON)"
+// @Failure      500      {string}  string  "Failed to remove certificate"
+// @Router       /certificates/responder [post]
 func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
 	if !validateMethod(w, r, http.MethodPost) {
 		return
@@ -146,6 +179,16 @@ type createNewCsrResponse struct {
 	CSR string `json:"csr"`
 }
 
+// HandleCreateNewCsr
+// @Summary      Create a new Certificate Signing Request (CSR)
+// @Description  Generates a new ECDSA CSR for the given common name.
+// @Tags         csr
+// @Accept       application/json
+// @Produce      application/json
+// @Param        payload  body  createNewCsrRequest  true  "Common name for the CSR"
+// @Success      200      {object}  createNewCsrResponse
+// @Failure      400      {string}  string  "CommonName is required or CSR generation failed"
+// @Router       /csr [post]
 func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
 	if !validateMethod(w, r, http.MethodPost) {
 		return
