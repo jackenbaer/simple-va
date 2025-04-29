@@ -98,6 +98,8 @@ func main() {
 		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
+
+	go ListenForSignals()
 	go StartPrivateListener()
 	StartPublicListener()
 }
