@@ -12,5 +12,6 @@ jobs:
     uses: ./.github/workflows/pipelines.yml
     with:
       run-tests:      true
+      do-build:      true
       run-vulncheck:  true
-      do-build:       ${{ startsWith(github.ref, 'refs/tags/') }}
+      do-release:       ${{ startsWith(github.ref, 'refs/tags/') }}

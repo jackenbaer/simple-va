@@ -15,6 +15,12 @@ on:
       do-build:
         type: boolean
         default: false
+      do-check-api-version:
+        type: boolean
+        default: false	
+      do-release:
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -45,13 +51,12 @@ jobs:
   build:
     if: ${{ inputs.do-build }}
     name: Build & Inject Version
-    needs: [test, vulncheck]
+    needs: [test, vulncheck]    
     runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [linux]
         arch: [amd64, arm64]
-
     steps:
       - uses: actions/checkout@v4
       - name: Set up Go
@@ -77,7 +82,7 @@ jobs:
           path: ./simple-va-${{ matrix.os }}-${{ matrix.arch }}*
 
   release:
-    if: ${{ inputs.do-build }}
+    if: ${{ inputs.do-release }}
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
