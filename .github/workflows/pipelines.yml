@@ -80,7 +80,6 @@ jobs:
 
   check-api-version:
     if: ${{ inputs.do-check-api-version }}
-    needs: [test]    
     name: Check API version
     runs-on: ubuntu-latest
     steps:
