@@ -26,17 +26,17 @@ type PrivateHTTPHandler struct {
 
 // IsAuthorizedUser checks whether a user has authorization for an endpoint
 // Implementation for protected endpoints in subnets
-func (p *PrivateHTTPHandler) IsAuthorizedUser(r *http.Request) bool {
+func IsAuthorizedUser(r *http.Request) bool {
 	key := r.Header.Get("X-API-Key")
-	return p.apiKeyStore.IsValidAPIKey(key)
-}
-
-func (p *PrivateHTTPHandler) HandleListCerts(w http.ResponseWriter, r *http.Request) {
 	if !p.IsAuthorizedUser(r) {
 		w.WriteHeader(http.StatusForbidden)
 		return
 	}
+	return p.apiKeyStore.IsValidAPIKey(key)
 
+}
+
+func HandleListCerts(w http.ResponseWriter, r *http.Request) {
 	if !validateMethod(w, r, http.MethodGet) {
 		return
 	}
@@ -55,12 +55,7 @@ type UploadSignedCertRequest struct {
 	IssuerCert string `json:"issuer_certificate"`
 }
 
-func (p *PrivateHTTPHandler) HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
-	if !p.IsAuthorizedUser(r) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
+func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -116,12 +111,7 @@ type RemoveResponderRequest struct {
 	OcspCert   string `json:"ocsp_certificate"`
 }
 
-func (p *PrivateHTTPHandler) HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
-	if !p.IsAuthorizedUser(r) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-
+func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -175,11 +165,7 @@ type createNewCsrResponse struct {
 	CSR string `json:"csr"`
 }
 
-func (p *PrivateHTTPHandler) HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
-	if !p.IsAuthorizedUser(r) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
+func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
 
 	if !validateMethod(w, r, http.MethodPost) {
 		return

@@ -23,20 +23,18 @@ var identity *Identity
 var ocspCertManager *OCSPCertManager
 var CertStatus *storage.CertStatus
 var Logger *slog.Logger
-var Config Configuration
+var Config *Configuration
 
 func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
 	log.Fatal(http.ListenAndServe(Config.HostnamePrivateApi, nil))
 }
 
-func StartPrivateListener(apiKeyStore *security.APIKeyStore) {
-	prvHttpHandler := &PrivateHTTPHandler{apiKeyStore: apiKeyStore}
-
-	http.HandleFunc("/createnewcsr", prvHttpHandler.HandleCreateNewCsr)
-	http.HandleFunc("/uploadsignedcert", prvHttpHandler.HandleUploadSignedCert)
-	http.HandleFunc("/removeresponder", prvHttpHandler.HandleRemoveResponder)
-	http.HandleFunc("/listcerts", prvHttpHandler.HandleListCerts)
+func StartPrivateListener() {
+	http.HandleFunc("/createnewcsr", HandleCreateNewCsr)
+	http.HandleFunc("/uploadsignedcert", HandleUploadSignedCert)
+	http.HandleFunc("/removeresponder", HandleRemoveResponder)
+	http.HandleFunc("/listcerts", HandleListCerts)
 
 	err := http.ListenAndServe(Config.HostnamePublicApi, nil)
 	if err != nil {
