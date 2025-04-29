@@ -75,11 +75,6 @@ jobs:
                               -X 'main.Commit=${COMMIT}' \
                               -X 'main.BuildTime=${BUILD_TIME}'" \
             -o simple-va-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} .
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: simple-va-${{ matrix.os }}-${{ matrix.arch }}
-          path: ./simple-va-${{ matrix.os }}-${{ matrix.arch }}*
 
   check-api-version:
     if: ${{ inputs.do-check-api-version }}
@@ -103,7 +98,16 @@ jobs:
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [linux]
+        arch: [amd64, arm64]
     steps:
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simple-va-${{ matrix.os }}-${{ matrix.arch }}
+          path: ./simple-va-${{ matrix.os }}-${{ matrix.arch }}*
       - name: Download artifacts
         uses: actions/download-artifact@v4
         with:
