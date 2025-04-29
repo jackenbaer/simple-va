@@ -8,7 +8,7 @@ import (
 
 func authorize(w http.ResponseWriter, r *http.Request) bool {
 	key := r.Header.Get("X-API-Key")
-	return ApiKeys.IsValidAPIKey(key)
+	return ApiKeys.IsAuthorized(key)
 }
 
 // Unified method validator

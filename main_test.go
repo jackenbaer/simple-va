@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"simple-va/security"
 	"simple-va/storage"
 	"testing"
 	"time"
@@ -386,6 +387,16 @@ func TestMain(m *testing.M) {
 			Logger.Error("Unexpected error while creating directory:", "error", err)
 			os.Exit(1)
 		}
+	}
+	ApiKeys = &security.ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
+	err = ApiKeys.Init()
+	if err != nil {
+		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
+	}
+	if !ApiKeys.Validate() {
+		Logger.Error("Invalid API key or format detected", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
 	}
 
 	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath}

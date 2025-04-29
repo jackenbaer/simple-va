@@ -81,13 +81,12 @@ func main() {
 		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
-
 	if !ApiKeys.Validate() {
 		Logger.Error("Invalid API key or format detected", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
-	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
 
+	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
 	err = ocspCertManager.Init()
 	if err != nil {
 		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))

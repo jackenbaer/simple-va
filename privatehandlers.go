@@ -20,6 +20,9 @@ type ListCertsResponse struct {
 }
 
 func HandleListCerts(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
 	if !validateMethod(w, r, http.MethodGet) {
 		return
 	}
@@ -39,6 +42,9 @@ type UploadSignedCertRequest struct {
 }
 
 func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -95,6 +101,9 @@ type RemoveResponderRequest struct {
 }
 
 func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -149,7 +158,9 @@ type createNewCsrResponse struct {
 }
 
 func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
-
+	if !authorize(w, r) {
+		return
+	}
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}

@@ -33,8 +33,8 @@ func (s *ApiKeyStore) Init() error {
 	return nil
 }
 
-// IsValidAPIKey checks whether the hashed API key is loaded
-func (s *ApiKeyStore) IsValidAPIKey(key string) bool {
+// IsAuthorized checks whether the hashed API key is loaded
+func (s *ApiKeyStore) IsAuthorized(key string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
