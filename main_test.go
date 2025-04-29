@@ -369,12 +369,18 @@ func TestMain(m *testing.M) {
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
-	tmpDir, err := os.MkdirTemp("", "simple-va") // system-tmp, automatisch eindeutig
+	tmpDir := "simple-va"
+	err := os.Mkdir(tmpDir, 0755)
 	if err != nil {
-		Logger.Error("cannot create temp dir", "error", err)
-		os.Exit(1)
+		if os.IsExist(err) {
+			Logger.Warn("Directory already exists (expected error):", "error", err)
+		} else {
+			Logger.Error("Unexpected error while creating directory:", "error", err)
+		}
+	} else {
+		Logger.Warn("Directory was created successfully")
+		defer os.RemoveAll(tmpDir)
 	}
-	defer os.RemoveAll(tmpDir)
 
 	Config = Configuration{
 		HostnamePrivateApi: "localhost:8080",
@@ -387,8 +393,12 @@ func TestMain(m *testing.M) {
 
 	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig
 	if err != nil {
-		Logger.Error("cannot create temp dir", "error", err)
-		os.Exit(1)
+		if os.IsExist(err) {
+			Logger.Error("cannot create cert dir", "error", err)
+		} else {
+			Logger.Error("Unexpected error while creating directory:", "error", err)
+			os.Exit(1)
+		}
 	}
 
 	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath}

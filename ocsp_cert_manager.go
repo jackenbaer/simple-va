@@ -186,11 +186,6 @@ func (o *OCSPCertManager) AddResponder(r OCSPResponder) error {
 	filename := fmt.Sprintf("%s.pem", issuerHashString)
 	filePath := filepath.Join(o.certsFolderPath, filename)
 
-	err = os.MkdirAll(o.certsFolderPath, 0755)
-	if err != nil {
-		return err
-	}
-
 	err = os.WriteFile(filePath, []byte(r.ToPEM()), 0644)
 	if err != nil {
 		return err
