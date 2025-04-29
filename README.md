@@ -32,7 +32,6 @@ openssl req -new -x509 -key root.key.pem -sha256 -days 3650 \
 ```bash
 curl -sS -X POST http://localhost:8080/createnewcsr \
      -H 'Content-Type: application/json' \
-     -H 'X-API-Key: 123' \
      -d '{"common_name":"deadbeaf.com"}' \
   | jq -r '.csr' > ocsp.csr.pem
 ```
@@ -54,7 +53,6 @@ jq -Rs -n \
    '{"signed_certificate":$sc,"issuer_certificate":$ic}' \
 | curl -sS -X POST http://localhost:8080/uploadsignedcert \
        -H 'Content-Type: application/json' \
-       -H 'X-API-Key: 123' \
        --data @-
 # expected result: HTTP 201 Created
 ```
