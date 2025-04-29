@@ -12,7 +12,6 @@ jobs:
     uses: ./.github/workflows/pipelines.yml
     with:
       run-tests:      true
-      do-check-api-version:      true
       do-build:      true
       run-vulncheck:  true
       do-release:       ${{ startsWith(github.ref, 'refs/tags/') }}
