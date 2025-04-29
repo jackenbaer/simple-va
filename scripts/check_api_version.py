@@ -6,7 +6,7 @@ import yaml
 # 1) Get the version from your Go binary
 try:
     raw = subprocess.check_output(
-        ["../simple-va", "--version"], stderr=subprocess.STDOUT
+        ["simple-va", "--version"], stderr=subprocess.STDOUT
     ).decode("utf-8").strip()
     version = raw.split(",")[-1]
 except subprocess.CalledProcessError as e:
@@ -16,7 +16,7 @@ except subprocess.CalledProcessError as e:
 print("Code ApiVersion:", version)
 
 # 2) Parse the OpenAPI/Swagger YAML
-with open("../docs/swagger.yaml") as f:
+with open("docs/swagger.yaml") as f:
     spec = yaml.safe_load(f)
 
 # 3) Extract the prefix
