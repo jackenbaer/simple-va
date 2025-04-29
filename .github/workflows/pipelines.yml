@@ -15,6 +15,9 @@ on:
       do-build:
         type: boolean
         default: false
+      do-check-api-version:
+        type: boolean
+        default: false	
 
 jobs:
   test:
@@ -76,7 +79,7 @@ jobs:
           path: ./simple-va-${{ matrix.os }}-${{ matrix.arch }}*
 
   check-api-version:
-    if: ${{ inputs.do-build }}
+    if: ${{ inputs.do-check-api-version }}
     needs: [test]    
     name: Check API version
     runs-on: ubuntu-latest
