@@ -18,6 +18,9 @@ on:
       do-check-api-version:
         type: boolean
         default: false	
+      do-release:
+        type: boolean
+        default: false
 
 jobs:
   test:
@@ -80,6 +83,7 @@ jobs:
 
   check-api-version:
     if: ${{ inputs.do-check-api-version }}
+    needs: [build]    
     name: Check API version
     runs-on: ubuntu-latest
     steps:
@@ -95,7 +99,7 @@ jobs:
           python3 scripts/check_api_version.py
 
   release:
-    if: ${{ inputs.do-build }}
+    if: ${{ inputs.do-release }}
     name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
