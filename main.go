@@ -24,6 +24,7 @@ var ocspCertManager *OCSPCertManager
 var CertStatus *storage.CertStatus
 var Logger *slog.Logger
 var Config *Configuration
+var ApiKeys *security.ApiKeyStore
 
 func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
@@ -74,18 +75,18 @@ func main() {
 		os.Exit(1)
 	}
 
-	APIKeyStore, err := security.NewAPIKeyStoreFromFile(Config.HashedApiKeysPath)
+	ApiKeys = &security.ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
+	err = ApiKeys.Init()
 	if err != nil {
-		Logger.Error("Could not load api keys", "error", err, "stack", string(debug.Stack()))
+		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
-	if !APIKeyStore.AllAPIKeysValid() {
+	if !ApiKeys.Validate() {
 		Logger.Error("Invalid API key or format detected", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 
 	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
-
 	err = ocspCertManager.Init()
 	if err != nil {
 		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))

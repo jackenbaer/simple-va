@@ -20,9 +20,13 @@ type ListCertsResponse struct {
 }
 
 func HandleListCerts(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
 	if !validateMethod(w, r, http.MethodGet) {
 		return
 	}
+
 	certs := []string{}
 	for _, v := range ocspCertManager.ListOCSPCerts() {
 		certs = append(certs, v.ToPEM())
@@ -38,6 +42,9 @@ type UploadSignedCertRequest struct {
 }
 
 func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -47,6 +54,7 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSONRequest(w, r, &req) {
 		return
 	}
+
 	ocspCert, err := PemToCert([]byte(req.SignedCert))
 	if err != nil {
 		Logger.Error("failed to parse ocsp certificate",
@@ -93,6 +101,9 @@ type RemoveResponderRequest struct {
 }
 
 func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}
@@ -147,6 +158,9 @@ type createNewCsrResponse struct {
 }
 
 func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
 	if !validateMethod(w, r, http.MethodPost) {
 		return
 	}

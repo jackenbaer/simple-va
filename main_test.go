@@ -18,6 +18,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
+	"simple-va/security"
 	"simple-va/storage"
 	"testing"
 	"time"
@@ -38,6 +39,7 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	// Create a new HTTP request
 	req := httptest.NewRequest(http.MethodPost, "/createnewidentity", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	// Create a ResponseRecorder to capture the response
 	rr := httptest.NewRecorder()
@@ -67,7 +69,6 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 }
 
 func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Certificate, caKey *ecdsa.PrivateKey) error {
-
 	requestBody := RemoveResponderRequest{
 		IssuerCert: string(CertToPEM(caCert)),
 		OcspCert:   string(CertToPEM(certToRevoke)),
@@ -80,6 +81,7 @@ func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Cert
 
 	req := httptest.NewRequest(http.MethodPost, "/removeresponder", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -104,6 +106,7 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 
 	req := httptest.NewRequest(http.MethodPost, "/createnewidentity", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -119,6 +122,7 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 func HandleListCertsTest() ([]string, error) {
 	req := httptest.NewRequest(http.MethodGet, "/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -328,6 +332,7 @@ func TestCertgen(t *testing.T) {
 func OCSPCerts() ([]string, error) {
 	req := httptest.NewRequest(http.MethodGet, "/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -352,12 +357,18 @@ func TestMain(m *testing.M) {
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
-	tmpDir, err := os.MkdirTemp("", "simple-va") // system-tmp, automatisch eindeutig
+	tmpDir := "simple-va"
+	err := os.Mkdir(tmpDir, 0755)
 	if err != nil {
-		Logger.Error("cannot create temp dir", "error", err)
-		os.Exit(1)
+		if os.IsExist(err) {
+			Logger.Warn("Directory already exists (expected error):", "error", err)
+		} else {
+			Logger.Error("Unexpected error while creating directory:", "error", err)
+		}
+	} else {
+		Logger.Warn("Directory was created successfully")
+		defer os.RemoveAll(tmpDir)
 	}
-	defer os.RemoveAll(tmpDir)
 
 	Config = &Configuration{
 		HostnamePrivateApi: "localhost:8080",
@@ -370,7 +381,21 @@ func TestMain(m *testing.M) {
 
 	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig
 	if err != nil {
-		Logger.Error("cannot create temp dir", "error", err)
+		if os.IsExist(err) {
+			Logger.Error("cannot create cert dir", "error", err)
+		} else {
+			Logger.Error("Unexpected error while creating directory:", "error", err)
+			os.Exit(1)
+		}
+	}
+	ApiKeys = &security.ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
+	err = ApiKeys.Init()
+	if err != nil {
+		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
+		os.Exit(1)
+	}
+	if !ApiKeys.Validate() {
+		Logger.Error("Invalid API key or format detected", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 

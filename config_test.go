@@ -37,6 +37,11 @@ func TestConfigurationLoadAndValidate(t *testing.T) {
 			inputFile: "testdata/config/invalid_config_4.ini",
 			wantErr:   true,
 		},
+		{
+			name:      "file does not exist",
+			inputFile: "testdata/config/invalid_config_5.ini",
+			wantErr:   true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -50,6 +55,7 @@ func TestConfigurationLoadAndValidate(t *testing.T) {
 				t.Errorf("Loading Error (%q) error = %v", absPath, err)
 
 			}
+
 			err = cfg.Validate()
 			if err != nil && !tt.wantErr {
 				t.Errorf("Validation Error (%q) error = %v", absPath, err)

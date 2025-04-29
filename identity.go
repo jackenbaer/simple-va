@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"golang.org/x/crypto/ocsp"
 )
@@ -87,9 +86,6 @@ func (i *Identity) LoadOrCreatePrivateKey() error {
 		Bytes: keyBytes,
 	}
 
-	if err := os.MkdirAll(filepath.Dir(privateKeyFullpath), 0o755); err != nil { // falls Unterverz. fehlt
-		return err
-	}
 	file, err := os.Create(privateKeyFullpath)
 	if err != nil {
 		return err
