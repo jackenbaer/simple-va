@@ -1,9 +1,4 @@
 *.pem 
 *.env
-simple-va/*
-!simple-va/.gitkeep
-!simple-va/certs
-simple-va/certs/*
-!simple-va/certs/.gitkeep
+simple-va/
 bin
-tmp
