@@ -13,6 +13,7 @@ type ApiKeyStore struct {
 	hashMap          map[string]string
 	mu               sync.RWMutex
 	HashedApiKeyFile string
+	Enabled          bool //decide if apikey authentication is enabled
 }
 
 // NewAPIKeyStoreFromFile reads hashed apikeys from a json file and returns them as a map (key = hash, value = comment)

@@ -8,6 +8,9 @@ import (
 
 func authorize(w http.ResponseWriter, r *http.Request) bool {
 	key := r.Header.Get("X-API-Key")
+	if !ApiKeys.Enabled {
+		return true
+	}
 	return ApiKeys.IsAuthorized(key)
 }
 
