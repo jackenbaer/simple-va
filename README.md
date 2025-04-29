@@ -61,4 +61,4 @@ Now you are ready to go !
 ---
 
 ## REST endpoint documention
-Visit https://simple-va.de/swagger to take a look at all provided REST API endpoint including expected json formats. 
+Visit [swagger document](https://simple-va.de) to take a look at all provided REST API endpoint including expected json formats. 
