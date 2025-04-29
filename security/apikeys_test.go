@@ -1,6 +1,7 @@
 package security
 
 import (
+	"path/filepath"
 	"testing"
 )
 
@@ -34,10 +35,13 @@ func TestNewAPIKeyStoreFromFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewAPIKeyStoreFromFile(tt.inputFile)
+			absPath := filepath.Clean(tt.inputFile)
+
+			a := ApiKeyStore{HashedApiKeyFile: absPath}
+			err := a.Init()
 
 			if (err != nil) != tt.wantErr {
-				t.Errorf("NewAPIKeyStoreFromFile(%q) error = %v, wantErr %v", tt.inputFile, err, tt.wantErr)
+				t.Errorf("Init(%q) error = %v, wantErr %v", tt.inputFile, err, tt.wantErr)
 			}
 		})
 	}
@@ -80,58 +84,61 @@ func TestIsValidApiKey(t *testing.T) {
 			wantErr: false,
 		},
 	}
-	APIKeyStore, err := NewAPIKeyStoreFromFile("../testdata/security/hashed_api_keys.json")
-	if err != nil {
-		t.Errorf("Preparing TestIsValidApiKey. Error = %v", err)
-	}
 
+	a := ApiKeyStore{HashedApiKeyFile: "../testdata/security/hashed_api_keys.json"}
+	err := a.Init()
+	if err != nil {
+		t.Errorf("Init(), %v", err)
+	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if APIKeyStore.IsValidAPIKey(tt.testKey) == tt.wantErr {
+			if a.IsValidAPIKey(tt.testKey) == tt.wantErr {
 				t.Errorf("IsValidApiKey(%q), wantErr %v", tt.testKey, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestAllAPIKeysValid(t *testing.T) {
+func TestValidate(t *testing.T) {
 	tests := []struct {
 		name      string
 		inputFile string
-		wantErr   bool
+		valid     bool
 	}{
 		{
 			name:      "valid file",
 			inputFile: "../testdata/security/hashed_api_keys.json",
-			wantErr:   false,
+			valid:     false,
 		},
 		{
 			name:      "empty file",
 			inputFile: "../testdata/security/invalid_hashed_api_keys_2.json",
-			wantErr:   true,
+			valid:     true,
 		},
 		{
 			name:      "typing error",
 			inputFile: "../testdata/security/invalid_hashed_api_keys_3.json",
-			wantErr:   true,
+			valid:     true,
 		},
 		{
 			name:      "uppercase chars in key",
 			inputFile: "../testdata/security/invalid_hashed_api_keys_5.json",
-			wantErr:   true,
+			valid:     true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			APIKeyStore, err := NewAPIKeyStoreFromFile(tt.inputFile)
+			absPath := filepath.Clean(tt.inputFile)
 
+			a := ApiKeyStore{HashedApiKeyFile: absPath}
+			err := a.Init()
 			if err != nil {
-				t.Errorf("Preparing TestAllAPIKeysValid() error = %v", err)
+				t.Errorf("Init(), %v", err)
 			}
 
-			if APIKeyStore.AllAPIKeysValid() == tt.wantErr {
-				t.Errorf("AllAPIKeysValid() for %q, error = %v, wantErr %v", tt.inputFile, err, tt.wantErr)
+			if a.Validate() == tt.valid {
+				t.Errorf("Validate() for %q, valid %v", tt.inputFile, tt.valid)
 			}
 		})
 	}

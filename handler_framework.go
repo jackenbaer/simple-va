@@ -6,6 +6,11 @@ import (
 	"runtime/debug"
 )
 
+func authorize(w http.ResponseWriter, r *http.Request) bool {
+	key := r.Header.Get("X-API-Key")
+	return ApiKeys.IsValidAPIKey(key)
+}
+
 // Unified method validator
 func validateMethod(w http.ResponseWriter, r *http.Request, expectedMethod string) bool {
 	if r.Method != expectedMethod {

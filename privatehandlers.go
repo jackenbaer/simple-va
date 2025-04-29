@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
-	"simple-va/security"
 )
 
 type subjectPublicKeyInfo struct {
@@ -18,22 +17,6 @@ type subjectPublicKeyInfo struct {
 
 type ListCertsResponse struct {
 	Certificates []string `json:"certificates"`
-}
-
-type PrivateHTTPHandler struct {
-	apiKeyStore *security.APIKeyStore
-}
-
-// IsAuthorizedUser checks whether a user has authorization for an endpoint
-// Implementation for protected endpoints in subnets
-func IsAuthorizedUser(r *http.Request) bool {
-	key := r.Header.Get("X-API-Key")
-	if !p.IsAuthorizedUser(r) {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}
-	return p.apiKeyStore.IsValidAPIKey(key)
-
 }
 
 func HandleListCerts(w http.ResponseWriter, r *http.Request) {

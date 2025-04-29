@@ -9,23 +9,17 @@ import (
 	"sync"
 )
 
-type APIKeyStore struct {
-	hashMap map[string]string
-	mu      sync.RWMutex
-}
-
-// NewAPIKeyStore works as a constructor. Can be used in Tests to initialize the hashMap.
-func NewAPIKeyStore(initHashMap map[string]string) *APIKeyStore {
-	return &APIKeyStore{
-		hashMap: initHashMap,
-	}
+type ApiKeyStore struct {
+	hashMap          map[string]string
+	mu               sync.RWMutex
+	HashedApiKeyFile string
 }
 
 // NewAPIKeyStoreFromFile reads hashed apikeys from a json file and returns them as a map (key = hash, value = comment)
-func NewAPIKeyStoreFromFile(inputFile string) (*APIKeyStore, error) {
-	file, err := os.Open(inputFile)
+func (s *ApiKeyStore) Init() error {
+	file, err := os.Open(s.HashedApiKeyFile)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer file.Close()
 
@@ -33,16 +27,14 @@ func NewAPIKeyStoreFromFile(inputFile string) (*APIKeyStore, error) {
 	decoder := json.NewDecoder(file)
 
 	if err = decoder.Decode(&hashes); err != nil {
-		return nil, err
+		return err
 	}
-
-	return &APIKeyStore{
-		hashMap: hashes,
-	}, nil
+	s.hashMap = hashes
+	return nil
 }
 
 // IsValidAPIKey checks whether the hashed API key is loaded
-func (s *APIKeyStore) IsValidAPIKey(key string) bool {
+func (s *ApiKeyStore) IsValidAPIKey(key string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -53,8 +45,8 @@ func (s *APIKeyStore) IsValidAPIKey(key string) bool {
 	return exists
 }
 
-// AllAPIKeysValid checks whether all loaded API keys have in the correct format
-func (s *APIKeyStore) AllAPIKeysValid() bool {
+// Validate checks whether all loaded API keys have in the correct format
+func (s *ApiKeyStore) Validate() bool {
 	re := regexp.MustCompile(`^[a-f0-9]{64}$`)
 
 	s.mu.RLock()
