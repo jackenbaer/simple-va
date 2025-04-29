@@ -14,9 +14,10 @@ import (
 
 // Default, will be overwritten at build time by the pipeline
 var (
-	Version   = "dev"
-	Commit    = "none"
-	BuildTime = "unknown"
+	Version    = "dev"
+	Commit     = "none"
+	BuildTime  = "unknown"
+	ApiVersion = "v1"
 )
 var identity *Identity
 var ocspCertManager *OCSPCertManager
@@ -46,11 +47,15 @@ func StartPrivateListener(apiKeyStore *security.APIKeyStore) {
 }
 
 func main() {
-	versionFlag := flag.Bool("version", false, "Print the version of the binary")
+	var versionFlag bool
+
+	flag.BoolVar(&versionFlag, "version", false, "Print the version of the binary")
+	flag.BoolVar(&versionFlag, "v", false, "Print the version of the binary (shorthand)")
+
 	flag.Parse()
 
-	if *versionFlag {
-		fmt.Printf("%s", Version)
+	if versionFlag {
+		fmt.Printf("%s,%s,%s,%s\n", Version, Commit, BuildTime, ApiVersion)
 		os.Exit(0)
 	}
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
@@ -95,6 +100,8 @@ func main() {
 		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
-	go StartPrivateListener(APIKeyStore)
+
+	go ListenForSignals()
+	go StartPrivateListener()
 	StartPublicListener()
 }
