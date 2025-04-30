@@ -5,8 +5,11 @@ import (
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"crypto/sha1"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/asn1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -68,6 +71,32 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	return csr, nil
 }
 
+func HandleAddRevokedCertTest(issuerKeyHash string, serialNumber string) error {
+	requestBody := RevokeCertRequest{
+		IssuerKeyHash: issuerKeyHash,
+		SerialNumber:  serialNumber,
+	}
+
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return err
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/addrevokedcert", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
+
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(HandleAddRevokedCert)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		return fmt.Errorf("Status ist not OK: %v", rr.Code)
+	}
+	return nil
+}
+
 func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Certificate, caKey *ecdsa.PrivateKey) error {
 	requestBody := RemoveResponderRequest{
 		IssuerCert: string(CertToPEM(caCert)),
@@ -79,7 +108,7 @@ func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Cert
 		return err
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/removeresponder", bytes.NewReader(bodyBytes))
+	req := httptest.NewRequest(http.MethodPost, "/v1/removeresponder", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-API-Key", "123")
 
@@ -104,7 +133,7 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 		return err
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/createnewidentity", bytes.NewReader(bodyBytes))
+	req := httptest.NewRequest(http.MethodPost, "/v1/createnewidentity", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-API-Key", "123")
 
@@ -120,7 +149,7 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 }
 
 func HandleListCertsTest() ([]string, error) {
-	req := httptest.NewRequest(http.MethodGet, "/listcerts", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-API-Key", "123")
 
@@ -313,9 +342,19 @@ func TestCertgen(t *testing.T) {
 
 	// Log the raw binary response in hexadecimal.
 	fmt.Println("OCSP Response Status:", ocspResp.Status)
-	fmt.Println("This Update:", ocspResp.ThisUpdate)
-	fmt.Println("Next Update:", ocspResp.NextUpdate)
-	fmt.Println("Produced At:", ocspResp.ProducedAt)
+
+	// Now revoke the cert...
+
+	var spki subjectPublicKeyInfo
+	if _, err := asn1.Unmarshal(signedLeafCert.RawSubjectPublicKeyInfo, &spki); err != nil {
+		fmt.Errorf("failed to unmarshal subjectPublicKeyInfo: %w", err)
+	}
+	hash := sha1.Sum(spki.SubjectPublicKey.Bytes)
+	issuerKHash := hex.EncodeToString(hash[:])
+	err = HandleAddRevokedCertTest(issuerKHash, signedLeafCert.SerialNumber.String())
+	if err != nil {
+		t.Fatalf("Failed to revoke cert. %v", err)
+	}
 
 	fmt.Println("Removing ocsp responder ...")
 	err = HandleRemoveResponderTest(ocspSignerCert, rootCert, rootKey)

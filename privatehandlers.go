@@ -15,6 +15,49 @@ type subjectPublicKeyInfo struct {
 	SubjectPublicKey asn1.BitString
 }
 
+type RevokeCertRequest struct {
+	IssuerKeyHash string `json:"issuer_key_hash"`
+	SerialNumber  string `json:"serial_number"`
+}
+
+// HandleRevokeCert
+// @Summary      Revoke TLS certificate
+// @Description  Revokes a TLS certificate by issuer key hash and serial number.
+// @Produce      application/json
+// @Success      200  {object}  RevokeCertRequest
+// @Router       /v1/revokecert [post]
+func HandleAddRevokedCert(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
+	if !validateMethod(w, r, http.MethodPost) {
+		return
+	}
+
+	//Validation
+	var req RevokeCertRequest
+	if !decodeJSONRequest(w, r, &req) {
+		return
+	}
+	existed, err := CertStatus.Remove(req.IssuerKeyHash, req.SerialNumber)
+
+	if err != nil {
+		Logger.Error("failed to revoke certificate",
+			"error", err,
+			"stack", string(debug.Stack()),
+		)
+		http.Error(w, "Failed to revoke Certificate", http.StatusInternalServerError)
+	}
+
+	if !existed {
+		Logger.Info("Revoked Cert did not exist")
+	}
+
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Certificate successfully revoked"))
+
+}
+
 type ListCertsResponse struct {
 	Certificates []string `json:"certificates"`
 }
