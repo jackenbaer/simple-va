@@ -11,7 +11,7 @@ import (
 )
 
 type subjectPublicKeyInfo struct {
-	Algorithm        asn1.RawValue // Wir benötigen hier den AlgorithmIdentifier nicht weiter.
+	Algorithm        asn1.RawValue
 	SubjectPublicKey asn1.BitString
 }
 
