@@ -500,8 +500,33 @@ func TestMain(m *testing.M) {
 			os.Exit(1)
 		}
 	}
+
+	data := `
+	{
+ "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123",
+ "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "abc",
+ "eea746d000233e477b770212ac1c3120cc458fa43551192de9910e3ae098ef02": "Tc47PO4hMIedGcdg809KiSUkXKH8EpjjM2WSs6Q0ZM",
+ "744deeea2b059f16ceb4860f29baed003e7bd706a5418273753ceae40efcef96": "Super Man",
+ "d248723280e75fbd29aaf90974ed224e4adc54fb8617835a14be7fc0085cc461": "dummy14@email.de",
+ "37dcdb91da663f093c5bf45e103ddb3e486082b7e8357363ca4600f3aaf7e8dd": "j/3hr93h.,d7fhe3JSHk/6%$§7($&/\"§6-#'*~df"
+}`
+	tmpfile, err := os.CreateTemp("", "apikey-*.json")
+	if err != nil {
+		Logger.Error("failed to create temp file: %v", "error", err)
+	}
+	defer os.Remove(tmpfile.Name()) // Clean up
+
+	_, err = tmpfile.WriteString(data)
+	if err != nil {
+		Logger.Error("failed to write config to temp file: %v", "error", err)
+	}
+	err = tmpfile.Close()
+	if err != nil {
+		Logger.Error("failed to close temp file: %v", "error", err)
+	}
+
 	ApiKeys = &ApiKeyStore{}
-	err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
+	err = ApiKeys.LoadFromFile(tmpfile.Name())
 	if err != nil {
 		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
