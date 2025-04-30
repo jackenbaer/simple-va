@@ -106,10 +106,6 @@ private_endpoint_key_path=""
 				t.Errorf("LoadFromFile failed: %v", err)
 				return
 			}
-			err = cfg.Validate()
-			if err != nil && !tt.wantErr {
-				t.Errorf("unexpected validation result: got error = %v, wantErr = %v", err, tt.wantErr)
-			}
 		})
 	}
 

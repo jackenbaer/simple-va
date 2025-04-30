@@ -4,21 +4,21 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"regexp"
 	"sync"
 )
 
 type ApiKeyStore struct {
-	hashMap          map[string]string
-	mu               sync.RWMutex
-	HashedApiKeyFile string
-	Enabled          bool //decide if apikey authentication is enabled
+	hashMap map[string]string
+	mu      sync.RWMutex
+	Enabled bool //decide if apikey authentication is enabled
 }
 
 // NewAPIKeyStoreFromFile reads hashed apikeys from a json file and returns them as a map (key = hash, value = comment)
-func (s *ApiKeyStore) Init() error {
-	file, err := os.Open(s.HashedApiKeyFile)
+func (s *ApiKeyStore) LoadFromFile(filepath string) error {
+	file, err := os.Open(filepath)
 	if err != nil {
 		return err
 	}
@@ -31,6 +31,15 @@ func (s *ApiKeyStore) Init() error {
 		return err
 	}
 	s.hashMap = hashes
+
+	re := regexp.MustCompile(`^[a-f0-9]{64}$`)
+	for key, _ := range s.hashMap {
+
+		if !re.MatchString(key) {
+			return errors.New("Key did not match sha256 regex ^[a-f0-9]{64}$")
+		}
+	}
+
 	return nil
 }
 
@@ -44,21 +53,4 @@ func (s *ApiKeyStore) IsAuthorized(key string) bool {
 
 	_, exists := s.hashMap[hashString]
 	return exists
-}
-
-// Validate checks whether all loaded API keys have in the correct format
-func (s *ApiKeyStore) Validate() bool {
-	re := regexp.MustCompile(`^[a-f0-9]{64}$`)
-
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-
-	for key, _ := range s.hashMap {
-
-		if !re.MatchString(key) {
-			return false
-		}
-	}
-
-	return !(len(s.hashMap) < 1)
 }

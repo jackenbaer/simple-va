@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -81,18 +80,5 @@ func (c *Configuration) LoadFromFile(f string) error {
 	}
 
 	*c = loadedCfg
-	return nil
-}
-
-func (c *Configuration) Validate() error {
-	_, err := url.Parse(c.HostnamePrivateApi)
-	if err != nil {
-		return err
-	}
-	_, err = url.Parse(c.HostnamePublicApi)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }

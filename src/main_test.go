@@ -500,14 +500,10 @@ func TestMain(m *testing.M) {
 			os.Exit(1)
 		}
 	}
-	ApiKeys = &ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
-	err = ApiKeys.Init()
+	ApiKeys = &ApiKeyStore{}
+	err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
 	if err != nil {
 		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
-		os.Exit(1)
-	}
-	if !ApiKeys.Validate() {
-		Logger.Error("Invalid API key or format detected", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 

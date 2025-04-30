@@ -74,7 +74,7 @@ jobs:
           go build -ldflags "-X 'main.Version=${{ github.ref_name }}' \
                               -X 'main.Commit=${COMMIT}' \
                               -X 'main.BuildTime=${BUILD_TIME}'" \
-            -o simple-va-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} .
+            -o simple-va-${{ matrix.os }}-${{ matrix.arch }}${{ matrix.os == 'windows' && '.exe' || '' }} ./src
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:

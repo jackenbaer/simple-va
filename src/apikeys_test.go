@@ -1,47 +1,100 @@
 package main
 
 import (
-	"path/filepath"
+	"os"
 	"testing"
 )
 
 func TestNewAPIKeyStoreFromFile(t *testing.T) {
 	tests := []struct {
-		name      string
-		inputFile string
-		wantErr   bool
+		name    string
+		data    string
+		wantErr bool
 	}{
 		{
-			name:      "valid file",
-			inputFile: "../testdata/security/hashed_api_keys.json",
-			wantErr:   false,
+			name: "valid file",
+			data: `
+{
+  "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123",
+  "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "abc",
+  "eea746d000233e477b770212ac1c3120cc458fa43551192de9910e3ae098ef02": "Tc47PO4hMIedGcdg809KiSUkXKH8EpjjM2WSs6Q0ZM",
+  "744deeea2b059f16ceb4860f29baed003e7bd706a5418273753ceae40efcef96": "Super Man",
+  "d248723280e75fbd29aaf90974ed224e4adc54fb8617835a14be7fc0085cc461": "dummy14@email.de",
+  "37dcdb91da663f093c5bf45e103ddb3e486082b7e8357363ca4600f3aaf7e8dd": "j/3hr93h.,d7fhe3JSHk/6%$§7($&/\"§6-#'*~df"
+ }
+`,
+			wantErr: false,
 		},
 		{
-			name:      "empty file",
-			inputFile: "../testdata/security/invalid_hashed_api_keys_1.json",
-			wantErr:   true,
+			name:    "empty file",
+			data:    ``,
+			wantErr: true,
 		},
 		{
-			name:      "typing error",
-			inputFile: "../testdata/security/invalid_hashed_api_keys_4.json",
-			wantErr:   true,
+			name: "typing error",
+			data: `
+{
+    "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123",
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "abc",
+    "eea746d000233e477b770212ac1c3120cc458fa43551192de9910e3ae098ef02": "Tc47PO4hMIedGcdg809KiSUkXKH8EpjjM2WSs6Q0ZM",
+    "744deeea2b059f16ceb4860f29baed003e7bd706a5418273753ceae40efcef96": "Super Man",
+    "": "dummy14@email.de",
+    "37dcdb91da663f093c5bf45e103ddb3e486082b7e8357363ca4600f3aaf7e8dd": "j/3hr93h.,d7fhe3JSHk/6%$§7($&/\"§6-#'*~df"
+   }
+`,
+			wantErr: true,
+		},
+
+		{
+			name: " error",
+			data: `
+ {
+  "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123",
+  "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "abc",
+  "eea746d000233e477b770212ac1c3120cc458fa43551192de9910e3ae098ef02": "Tc47PO4hMIedGcdg809KiSUkXKH8EpjjM2WSs6Q0ZM",
+  "744deeea2b059f16ceb4860f29baed003e7bd706a5418273753ceae40efcef96": "Super Man",
+  "d248723280e75fbd29aaf90974ed224e4adc54fb8617835a14be7fc0085cc461": "dummy14@email.de",
+  "37dcdb91da663f093c5bf45e103ddb3e486082b7e8357363ca4600f3aaf7e8DD": "j/3hr93h.,d7fhe3JSHk/6%$§7($&/\"§6-#'*~df"
+ }
+`,
+			wantErr: true,
 		},
 		{
-			name:      "file does not exist",
-			inputFile: "../testdata/security/invalid_hashed_api_keys_not_exist.json",
-			wantErr:   true,
+			name: "error",
+			data: `
+{
+    "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123",
+    "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "abc",
+    "eea746d000233e477b770212ac1c3120cc458fa43551192de9910e3ae098ef02: "Tc47PO4hMIedGcdg809KiSUkXKH8EpjjM2WSs6Q0ZM",
+    "744deeea2b059f16ceb4860f29baed003e7bd706a5418273753ceae40efcef96": "Super Man",
+    "d248723280e75fbd29aaf90974ed224e4adc54fb8617835a14be7fc0085cc461": "dummy14@email.de"
+}
+`,
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			absPath := filepath.Clean(tt.inputFile)
+			tmpfile, err := os.CreateTemp("", "apikey-*.json")
+			if err != nil {
+				t.Fatalf("failed to create temp file: %v", err)
+			}
+			defer os.Remove(tmpfile.Name()) // Clean up
 
-			a := ApiKeyStore{HashedApiKeyFile: absPath}
-			err := a.Init()
+			_, err = tmpfile.WriteString(tt.data)
+			if err != nil {
+				t.Fatalf("failed to write config to temp file: %v", err)
+			}
+			err = tmpfile.Close()
+			if err != nil {
+				t.Fatalf("failed to close temp file: %v", err)
+			}
 
+			a := ApiKeyStore{}
+			err = a.LoadFromFile(tmpfile.Name())
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Init(%q) error = %v, wantErr %v", tt.inputFile, err, tt.wantErr)
+				t.Errorf("LoadFromFile(%q) name = %s,  error = %v, wantErr %v", tt.data, tt.name, err, tt.wantErr)
 			}
 		})
 	}
@@ -85,8 +138,32 @@ func TestIsAuthorized(t *testing.T) {
 		},
 	}
 
-	a := ApiKeyStore{HashedApiKeyFile: "../testdata/security/hashed_api_keys.json"}
-	err := a.Init()
+	data := `
+	 {
+  "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123",
+  "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "abc",
+  "eea746d000233e477b770212ac1c3120cc458fa43551192de9910e3ae098ef02": "Tc47PO4hMIedGcdg809KiSUkXKH8EpjjM2WSs6Q0ZM",
+  "744deeea2b059f16ceb4860f29baed003e7bd706a5418273753ceae40efcef96": "Super Man",
+  "d248723280e75fbd29aaf90974ed224e4adc54fb8617835a14be7fc0085cc461": "dummy14@email.de",
+  "37dcdb91da663f093c5bf45e103ddb3e486082b7e8357363ca4600f3aaf7e8dd": "j/3hr93h.,d7fhe3JSHk/6%$§7($&/\"§6-#'*~df"
+ }`
+	tmpfile, err := os.CreateTemp("", "apikey-*.json")
+	if err != nil {
+		t.Fatalf("failed to create temp file: %v", err)
+	}
+	defer os.Remove(tmpfile.Name()) // Clean up
+
+	_, err = tmpfile.WriteString(data)
+	if err != nil {
+		t.Fatalf("failed to write config to temp file: %v", err)
+	}
+	err = tmpfile.Close()
+	if err != nil {
+		t.Fatalf("failed to close temp file: %v", err)
+	}
+
+	a := ApiKeyStore{}
+	err = a.LoadFromFile(tmpfile.Name())
 	if err != nil {
 		t.Errorf("Init(), %v", err)
 	}
@@ -94,51 +171,6 @@ func TestIsAuthorized(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if a.IsAuthorized(tt.testKey) == tt.wantErr {
 				t.Errorf("IsAuthorized(%q), wantErr %v", tt.testKey, tt.wantErr)
-			}
-		})
-	}
-}
-
-func TestValidate(t *testing.T) {
-	tests := []struct {
-		name      string
-		inputFile string
-		valid     bool
-	}{
-		{
-			name:      "valid file",
-			inputFile: "../testdata/security/hashed_api_keys.json",
-			valid:     false,
-		},
-		{
-			name:      "empty file",
-			inputFile: "../testdata/security/invalid_hashed_api_keys_2.json",
-			valid:     true,
-		},
-		{
-			name:      "typing error",
-			inputFile: "../testdata/security/invalid_hashed_api_keys_3.json",
-			valid:     true,
-		},
-		{
-			name:      "uppercase chars in key",
-			inputFile: "../testdata/security/invalid_hashed_api_keys_5.json",
-			valid:     true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			absPath := filepath.Clean(tt.inputFile)
-
-			a := ApiKeyStore{HashedApiKeyFile: absPath}
-			err := a.Init()
-			if err != nil {
-				t.Errorf("Init(), %v", err)
-			}
-
-			if a.Validate() == tt.valid {
-				t.Errorf("Validate() for %q, valid %v", tt.inputFile, tt.valid)
 			}
 		})
 	}

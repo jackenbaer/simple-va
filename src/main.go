@@ -73,8 +73,7 @@ func main() {
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
-	Config.LoadFromFile("./config.ini")
-	err := Config.Validate()
+	err := Config.LoadFromFile("./config.ini")
 	if err != nil {
 		Logger.Error("Failed to validate configuration", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
@@ -87,14 +86,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	ApiKeys = &ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
-	err = ApiKeys.Init()
+	ApiKeys = &ApiKeyStore{}
+	err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
 	if err != nil {
 		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
-		os.Exit(1)
-	}
-	if !ApiKeys.Validate() {
-		Logger.Error("Invalid API key or format detected", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
 
