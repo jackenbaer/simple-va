@@ -39,6 +39,7 @@ func (db *CertStatus) Init() error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -57,16 +58,20 @@ func (db *CertStatus) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
 	db.Mu.Lock()
 	defer db.Mu.Unlock()
 
+	if db.StatusMap == nil {
+		db.StatusMap = make(map[string]map[string]OCSPEntry)
+	}
+
 	if _, exists := db.StatusMap[issuerKeyHash]; !exists {
 		db.StatusMap[issuerKeyHash] = make(map[string]OCSPEntry)
 	}
 
 	db.StatusMap[issuerKeyHash][entry.SerialNumber] = entry
-	err := db.saveJsonToDisk()
-	if err != nil {
-		return err
-	}
-	return nil
+	return db.saveJsonToDisk()
+}
+
+func (db *CertStatus) List() map[string]map[string]OCSPEntry {
+	return db.StatusMap // IssuerKeyHash → SerialNumber → OCSPEntry
 }
 
 func (db *CertStatus) GetEntry(issuerKeyHash string, serialNumber string) (OCSPEntry, bool) {

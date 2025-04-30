@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"simple-va/storage"
+	"time"
 )
 
 type subjectPublicKeyInfo struct {
@@ -15,9 +17,33 @@ type subjectPublicKeyInfo struct {
 	SubjectPublicKey asn1.BitString
 }
 
+type ListRevokedCertsResponse struct {
+	RevokedCerts map[string]map[string]storage.OCSPEntry `json:"revoked_certs"`
+}
+
+// HandleLisRevokedCerts
+// @Summary      List all revoked certificates
+// @Description  Retrieves all revoked certificates
+// @Produce      application/json
+// @Success      200  {object}  ListRevokedCertsResponse
+// @Router       /v1/listrevokedcerts [get]
+func HandleListRevokedCerts(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
+	if !validateMethod(w, r, http.MethodGet) {
+		return
+	}
+
+	writeJSONResponse(w, http.StatusOK, ListRevokedCertsResponse{RevokedCerts: CertStatus.List()})
+}
+
 type RevokeCertRequest struct {
-	IssuerKeyHash string `json:"issuer_key_hash"`
-	SerialNumber  string `json:"serial_number"`
+	IssuerKeyHash    string    `json:"issuer_key_hash"`
+	SerialNumber     string    `json:"serial_number"`
+	RevocationReason string    `json:"revocation_reason"`
+	RevocationDate   time.Time `json:"revocation_date"`
+	ExpirationDate   time.Time `json:"expiration_date"`
 }
 
 // HandleRevokeCert
@@ -39,18 +65,20 @@ func HandleAddRevokedCert(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSONRequest(w, r, &req) {
 		return
 	}
-	existed, err := CertStatus.Remove(req.IssuerKeyHash, req.SerialNumber)
+	ocsp := storage.OCSPEntry{
+		ExpirationDate:   req.ExpirationDate,
+		RevocationDate:   req.RevocationDate,
+		RevocationReason: req.RevocationReason,
+		SerialNumber:     req.SerialNumber,
+	}
 
+	err := CertStatus.AddEntry(req.IssuerKeyHash, ocsp)
 	if err != nil {
 		Logger.Error("failed to revoke certificate",
 			"error", err,
 			"stack", string(debug.Stack()),
 		)
 		http.Error(w, "Failed to revoke Certificate", http.StatusInternalServerError)
-	}
-
-	if !existed {
-		Logger.Info("Revoked Cert did not exist")
 	}
 
 	w.WriteHeader(http.StatusOK)

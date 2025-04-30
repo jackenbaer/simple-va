@@ -71,10 +71,13 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	return csr, nil
 }
 
-func HandleAddRevokedCertTest(issuerKeyHash string, serialNumber string) error {
+func HandleAddRevokedCertTest(issuerKeyHash string, serialNumber string, expirationDate time.Time) error {
 	requestBody := RevokeCertRequest{
-		IssuerKeyHash: issuerKeyHash,
-		SerialNumber:  serialNumber,
+		IssuerKeyHash:    issuerKeyHash,
+		SerialNumber:     serialNumber,
+		ExpirationDate:   expirationDate,
+		RevocationReason: "1",
+		RevocationDate:   time.Now(),
 	}
 
 	bodyBytes, err := json.Marshal(requestBody)
@@ -168,6 +171,28 @@ func HandleListCertsTest() ([]string, error) {
 		return []string{}, err
 	}
 	return response.Certificates, nil
+}
+
+func HandleListRevokedCertsTest() (map[string]map[string]storage.OCSPEntry, error) {
+	req := httptest.NewRequest(http.MethodGet, "/v1/listrevokedcerts", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
+
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(HandleListRevokedCerts)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		return nil, fmt.Errorf("Status ist not OK: %v", rr.Code)
+	}
+
+	var response ListRevokedCertsResponse
+	err := json.NewDecoder(rr.Body).Decode(&response)
+	if err != nil {
+		return nil, err
+	}
+	return response.RevokedCerts, nil
 }
 
 func GenerateRootCA(certTemplate *x509.Certificate) (*x509.Certificate, *ecdsa.PrivateKey, error) {
@@ -342,20 +367,57 @@ func TestCertgen(t *testing.T) {
 
 	// Log the raw binary response in hexadecimal.
 	fmt.Println("OCSP Response Status:", ocspResp.Status)
-
+	if ocspResp.Status != 0 {
+		t.Fatalf("Expected OCSP state good ")
+	}
 	// Now revoke the cert...
 
 	var spki subjectPublicKeyInfo
-	if _, err := asn1.Unmarshal(signedLeafCert.RawSubjectPublicKeyInfo, &spki); err != nil {
+	if _, err := asn1.Unmarshal(rootCert.RawSubjectPublicKeyInfo, &spki); err != nil {
 		fmt.Errorf("failed to unmarshal subjectPublicKeyInfo: %w", err)
 	}
 	hash := sha1.Sum(spki.SubjectPublicKey.Bytes)
 	issuerKHash := hex.EncodeToString(hash[:])
-	err = HandleAddRevokedCertTest(issuerKHash, signedLeafCert.SerialNumber.String())
+	err = HandleAddRevokedCertTest(issuerKHash, signedLeafCert.SerialNumber.String(), signedLeafCert.NotAfter)
 	if err != nil {
 		t.Fatalf("Failed to revoke cert. %v", err)
 	}
 
+	f, err := HandleListRevokedCertsTest()
+	if err != nil {
+		t.Fatalf("Failed to list certificates. %v", err)
+	}
+	fmt.Printf("Listed revoked certificates: %+v\n", f)
+
+	resp, err = http.Post(server.URL, "application/ocsp-request", bytes.NewReader(ocspReqDER))
+	if err != nil {
+		t.Fatalf("failed to send OCSP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verify the Content-Type of the response.
+	if ct := resp.Header.Get("Content-Type"); ct != "application/ocsp-response" {
+		t.Fatalf("unexpected content type: %s", ct)
+	}
+
+	// Read the binary OCSP response.
+	ocspRespDER, err = io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read OCSP response: %v", err)
+	}
+	ocspResp, err = ocsp.ParseResponse(ocspRespDER, nil)
+	if err != nil {
+		t.Fatalf("failed to parse OCSP response: %v", err)
+	}
+
+	if ocspResp.Status != 1 {
+		t.Fatalf("Expected OCSP state revoked ")
+	}
+
+	// Log the raw binary response in hexadecimal.
+	fmt.Println("OCSP Response Status:", ocspResp.Status)
+
+	// Remove the Responder
 	fmt.Println("Removing ocsp responder ...")
 	err = HandleRemoveResponderTest(ocspSignerCert, rootCert, rootKey)
 	if err != nil {

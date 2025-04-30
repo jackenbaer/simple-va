@@ -37,6 +37,7 @@ func StartPrivateListener() {
 	http.HandleFunc(fmt.Sprintf("/%s/removeresponder", ApiVersion), HandleRemoveResponder)
 	http.HandleFunc(fmt.Sprintf("/%s/listcerts", ApiVersion), HandleListCerts)
 	http.HandleFunc(fmt.Sprintf("/%s/addrevokedcert", ApiVersion), HandleAddRevokedCert)
+	http.HandleFunc(fmt.Sprintf("/%s/listrevokedcerts", ApiVersion), HandleListRevokedCerts)
 
 	err := http.ListenAndServe(Config.HostnamePublicApi, nil)
 	if err != nil {
