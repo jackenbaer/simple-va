@@ -529,12 +529,14 @@ func TestMain(m *testing.M) {
 	}
 
 	Config = &Configuration{
-		HostnamePrivateApi: "localhost:8080",
-		HostnamePublicApi:  "localhost:8081",
-		PrivateKeyPath:     filepath.Join(tmpDir, "priv.pem"),
-		CertsFolderPath:    filepath.Join(tmpDir, "certs"),
-		CertStatusPath:     filepath.Join(tmpDir, "statuslist.json"),
-		HashedApiKeysPath:  "./testdata/security/hashed_api_keys.json",
+		HostnamePrivateApi:      "localhost:8080",
+		HostnamePublicApi:       "localhost:8081",
+		PrivateKeyPath:          filepath.Join(tmpDir, "priv.pem"),
+		CertsFolderPath:         filepath.Join(tmpDir, "certs"),
+		CertStatusPath:          filepath.Join(tmpDir, "statuslist.json"),
+		HashedApiKeysPath:       "./testdata/security/hashed_api_keys.json",
+		PrivateEndpointKeyPath:  "",
+		PrivateEndpointCertPath: "",
 	}
 
 	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig

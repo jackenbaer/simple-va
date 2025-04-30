@@ -40,9 +40,20 @@ func StartPrivateListener() {
 	http.HandleFunc(fmt.Sprintf("/%s/removerevokedcert", ApiVersion), HandleRemoveRevokedCert)
 	http.HandleFunc(fmt.Sprintf("/%s/listrevokedcerts", ApiVersion), HandleListRevokedCerts)
 
-	err := http.ListenAndServe(Config.HostnamePublicApi, nil)
-	if err != nil {
-		Logger.Error("Error starting private API listener", "stack", string(debug.Stack()))
+	if Config.PrivateEndpointCertPath == "" || Config.PrivateEndpointKeyPath == "" {
+		err := http.ListenAndServe(Config.HostnamePublicApi, nil)
+		if err != nil {
+			Logger.Error("Error starting private API listener", "stack", string(debug.Stack()))
+			os.Exit(1)
+		}
+	} else if Config.PrivateEndpointCertPath != "" || Config.PrivateEndpointKeyPath != "" {
+		err := http.ListenAndServeTLS(Config.HostnamePublicApi, Config.PrivateEndpointCertPath, Config.PrivateEndpointKeyPath, nil)
+		if err != nil {
+			Logger.Error("Error starting private TLS API listener", "stack", string(debug.Stack()))
+			os.Exit(1)
+		}
+	} else {
+		Logger.Error("Error starting private API listener. Strange tls config")
 		os.Exit(1)
 	}
 

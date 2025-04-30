@@ -55,12 +55,14 @@ func loadConfig(m map[string]string) (Configuration, error) {
 }
 
 type Configuration struct {
-	HostnamePrivateApi string `ini:"hostname_private_api"`
-	HostnamePublicApi  string `ini:"hostname_public_api"`
-	PrivateKeyPath     string `ini:"private_key_path"`
-	CertsFolderPath    string `ini:"certificate_path"`
-	CertStatusPath     string `ini:"cert_status_path"`
-	HashedApiKeysPath  string `ini:"hashed_api_keys_path"`
+	HostnamePrivateApi      string `ini:"hostname_private_api"`
+	HostnamePublicApi       string `ini:"hostname_public_api"`
+	PrivateKeyPath          string `ini:"private_key_path"`
+	CertsFolderPath         string `ini:"certificate_path"`
+	CertStatusPath          string `ini:"cert_status_path"`
+	HashedApiKeysPath       string `ini:"hashed_api_keys_path"`
+	PrivateEndpointCertPath string `ini:"private_endpoint_cert_path"`
+	PrivateEndpointKeyPath  string `ini:"private_endpoint_key_path"`
 }
 
 func (c *Configuration) LoadFromFile(f string) error {
