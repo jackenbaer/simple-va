@@ -1,5 +1,5 @@
 definitions:
-  main.ListCertsResponse:
+  main.ListResponderCertsResponse:
     properties:
       certificates:
         items:
@@ -81,7 +81,9 @@ paths:
           schema:
             type: string
       summary: Create a new Certificate Signing Request (CSR)
-  /v1/listcerts:
+      tags:
+      - ResponderCertsAction
+  /v1/listrespondercerts:
     get:
       description: Retrieves all OCSP responder certificates stored in the manager,
         returned as PEM-encoded strings.
@@ -91,8 +93,10 @@ paths:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/main.ListCertsResponse'
+            $ref: '#/definitions/main.ListResponderCertsResponse'
       summary: List all OCSP certificates
+      tags:
+      - ResponderCertsAction
   /v1/listrevokedcerts:
     get:
       description: Retrieves all revoked certificates
@@ -135,6 +139,8 @@ paths:
           schema:
             type: string
       summary: Remove an OCSP responder
+      tags:
+      - ResponderCertsAction
   /v1/removerevokedcert:
     post:
       description: Remove a revoked certificate from the list
@@ -177,4 +183,6 @@ paths:
           schema:
             type: string
       summary: Upload a signed OCSP responder certificate
+      tags:
+      - ResponderCertsAction
 swagger: "2.0"
