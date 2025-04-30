@@ -105,7 +105,7 @@ paths:
             $ref: '#/definitions/main.ListRevokedCertsResponse'
       summary: List all revoked certificates
       tags:
-      - RevokedCertListAction
+      - RevokedCertsAction
   /v1/removeresponder:
     post:
       consumes:
@@ -147,7 +147,7 @@ paths:
             type: string
       summary: Remove a revoked certificate from the list
       tags:
-      - RevokedCertListAction
+      - RevokedCertsAction
   /v1/uploadsignedcert:
     post:
       consumes:
