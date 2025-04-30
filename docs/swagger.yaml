@@ -1,4 +1,17 @@
 definitions:
+  main.AddRevokeCertRequest:
+    properties:
+      expiration_date:
+        type: string
+      issuer_key_hash:
+        type: string
+      revocation_date:
+        type: string
+      revocation_reason:
+        type: string
+      serial_number:
+        type: string
+    type: object
   main.ListResponderCertsResponse:
     properties:
       certificates:
@@ -57,6 +70,37 @@ definitions:
 info:
   contact: {}
 paths:
+  /v1/addrevokedcert:
+    post:
+      consumes:
+      - application/json
+      description: Marks a certificate as revoked using issuer key hash, serial number,
+        and revocation metadata.
+      parameters:
+      - description: Certificate revocation details
+        in: body
+        name: cert
+        required: true
+        schema:
+          $ref: '#/definitions/main.AddRevokeCertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Certificate successfully revoked
+          schema:
+            type: string
+        "400":
+          description: Invalid request
+          schema:
+            type: string
+        "500":
+          description: Failed to revoke certificate
+          schema:
+            type: string
+      summary: Add a revoked certificate
+      tags:
+      - RevokedCertsAction
   /v1/createnewcsr:
     post:
       consumes:
