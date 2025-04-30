@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"crypto"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
@@ -13,7 +14,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"math/big"
 	"net/http"
@@ -221,7 +221,20 @@ func HandleListRevokedCertsTest() (map[string]map[string]storage.OCSPEntry, erro
 	return response.RevokedCerts, nil
 }
 
-func GenerateRootCA(certTemplate *x509.Certificate) (*x509.Certificate, *ecdsa.PrivateKey, error) {
+func GenerateRootCA() (*x509.Certificate, *ecdsa.PrivateKey, error) {
+	certTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(1),
+		Subject: pkix.Name{
+			CommonName:   "Root CA",
+			Organization: []string{"Example Org"},
+		},
+		NotBefore:             time.Now(),
+		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour),
+		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
+		BasicConstraintsValid: true,
+		IsCA:                  true,
+		MaxPathLen:            0,
+	}
 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to generate private key: %v", err)
@@ -240,7 +253,48 @@ func GenerateRootCA(certTemplate *x509.Certificate) (*x509.Certificate, *ecdsa.P
 	return cert, privateKey, nil
 }
 
-func SignCSR(caCert *x509.Certificate, caKey *ecdsa.PrivateKey, csr *x509.CertificateRequest, certTemplate *x509.Certificate) (*x509.Certificate, error) {
+func createLeafCert(rootCert *x509.Certificate, rootKey crypto.PrivateKey) (*x509.Certificate, crypto.Signer, error) {
+	leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to generate leaf key: %w", err)
+	}
+
+	leafCertTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject: pkix.Name{
+			CommonName:   "Leaf Certificate",
+			Organization: []string{"Example Org"},
+		},
+		NotBefore:   time.Now(),
+		NotAfter:    time.Now().Add(365 * 24 * time.Hour),
+		KeyUsage:    x509.KeyUsageDigitalSignature,
+		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
+		OCSPServer:  []string{"http://localhost:8081/ocsp"},
+	}
+
+	certDER, err := x509.CreateCertificate(rand.Reader, leafCertTemplate, rootCert, &leafKey.PublicKey, rootKey)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to sign certificate: %w", err)
+	}
+
+	signedLeafCert, err := x509.ParseCertificate(certDER)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse signed certificate: %w", err)
+	}
+
+	return signedLeafCert, leafKey, nil
+}
+
+func SignCSR(caCert *x509.Certificate, caKey *ecdsa.PrivateKey, csr *x509.CertificateRequest) (*x509.Certificate, error) {
+	certTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(2),
+		Subject:      csr.Subject,
+		NotBefore:    time.Now(),
+		NotAfter:     time.Now().Add(1 * 365 * 24 * time.Hour),
+		KeyUsage:     x509.KeyUsageDigitalSignature,
+		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageOCSPSigning},
+		IsCA:         false,
+	}
 	certTemplate.Subject = csr.Subject
 	certTemplate.PublicKey = csr.PublicKey
 
@@ -257,23 +311,41 @@ func SignCSR(caCert *x509.Certificate, caKey *ecdsa.PrivateKey, csr *x509.Certif
 	return cert, nil
 }
 
-func TestCertgen(t *testing.T) {
-	rootTemplate := &x509.Certificate{
-		SerialNumber: big.NewInt(1),
-		Subject: pkix.Name{
-			CommonName:   "Root CA",
-			Organization: []string{"Example Org"},
-		},
-		NotBefore: time.Now(),
-		NotAfter:  time.Now().Add(10 * 365 * 24 * time.Hour), // Valid for 10 years
-		KeyUsage:  x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
-		// Basic constraints.
-		BasicConstraintsValid: true,
-		IsCA:                  true,
-		MaxPathLen:            0,
+func performOCSPTestRequest(leafCert, rootCert *x509.Certificate) (int, error) {
+	ocspReqDER, err := ocsp.CreateRequest(leafCert, rootCert, nil)
+	if err != nil {
+		return -1, fmt.Errorf("failed to create OCSP request: %w", err)
 	}
 
-	rootCert, rootKey, err := GenerateRootCA(rootTemplate)
+	server := httptest.NewServer(http.HandlerFunc(HandleOcsp))
+	defer server.Close()
+
+	resp, err := http.Post(server.URL, "application/ocsp-request", bytes.NewReader(ocspReqDER))
+	if err != nil {
+		return -1, fmt.Errorf("failed to send OCSP request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if ct := resp.Header.Get("Content-Type"); ct != "application/ocsp-response" {
+		return -1, fmt.Errorf("unexpected content type: %s", ct)
+	}
+
+	ocspRespDER, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return -1, fmt.Errorf("failed to read OCSP response: %w", err)
+	}
+
+	ocspResp, err := ocsp.ParseResponse(ocspRespDER, nil)
+	if err != nil {
+		return -1, fmt.Errorf("failed to parse OCSP response: %w", err)
+	}
+
+	return ocspResp.Status, nil
+}
+
+func TestCertgen(t *testing.T) {
+	// Generate a root CA
+	rootCert, rootKey, err := GenerateRootCA()
 	if err != nil {
 		t.Errorf("Failed to create a root ca for signing. %v", err)
 	}
@@ -283,196 +355,78 @@ func TestCertgen(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed parse root ca key to pem: %v", err)
 	}
-
 	fmt.Printf("Root CA Key:\n%s\n", string(rootKeyPem))
 
+	// Generate a CSR in simple-va
 	csr, err := HandleCreateNewCsrTest()
 	if err != nil {
 		t.Fatalf("Failed to create a new identity. %v", err)
 	}
 	fmt.Printf("OCSP Signer CSR:\n%s\n", string(CSRToPEM(csr)))
 
-	certTemplate := &x509.Certificate{
-		SerialNumber: big.NewInt(2),
-		Subject:      csr.Subject,
-		NotBefore:    time.Now(),
-		NotAfter:     time.Now().Add(1 * 365 * 24 * time.Hour),
-		KeyUsage:     x509.KeyUsageDigitalSignature,
-		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageOCSPSigning},
-		IsCA:         false,
-	}
-	ocspSignerCert, err := SignCSR(rootCert, rootKey, csr, certTemplate)
+	// Sign CSR with root CA
+	ocspSignerCert, err := SignCSR(rootCert, rootKey, csr)
 	if err != nil {
 		t.Fatalf("Failed to create a new identity. %v", err)
 	}
 	fmt.Printf("OCSP Signer Certificate:\n%s\n", string(CertToPEM(ocspSignerCert)))
 
+	// Upload signed CSR to simple-va
 	err = HandleUploadSignedCertTest(ocspSignerCert, rootCert)
 	if err != nil {
 		t.Fatalf("Failed to upload cert. %v", err)
 	}
-	certs, err := HandleListCertsTest()
-	if err != nil {
-		t.Fatalf("Failed to list certificates. %v", err)
-	}
-	fmt.Printf("Listed certificates: %v\n", certs)
 
-	//OCSP Testing
-	leafKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+	// Create leaf cert for revocation tests
+	leafCert, _, err := createLeafCert(rootCert, rootKey)
 	if err != nil {
-		log.Fatalf("failed to generate private key: %v", err)
+		t.Fatalf("Failed to create leaf cert. %v", err)
 	}
-
-	leafCertTemplate := &x509.Certificate{
-		SerialNumber: big.NewInt(2),
-		Subject: pkix.Name{
-			CommonName:   "Leaf Certificate",
-			Organization: []string{"Example Org"},
-		},
-		NotBefore:   time.Now(),
-		NotAfter:    time.Now().Add(365 * 24 * time.Hour), // Valid for 1 year
-		KeyUsage:    x509.KeyUsageDigitalSignature,
-		ExtKeyUsage: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
-		// Set the OCSP endpoint URL:
-		OCSPServer: []string{"http://localhost:8081/ocsp"},
-	}
-	certDER, err := x509.CreateCertificate(rand.Reader, leafCertTemplate, rootCert, &leafKey.PublicKey, rootKey)
-	if err != nil {
-		t.Fatalf("failed to sign certificate: %v", err)
-	}
-
-	// Parse the DER-encoded certificate into an *x509.Certificate.
-	signedLeafCert, err := x509.ParseCertificate(certDER)
-	if err != nil {
-		t.Fatalf("failed to parse signed certificate: %v", err)
-	}
-	fmt.Printf("Leaf Certificate:\n%s\n", CertToPEM(signedLeafCert))
-	ocspReqDER, err := ocsp.CreateRequest(signedLeafCert, rootCert, nil)
-	if err != nil {
-		t.Fatalf("failed to create OCSP request: %v", err)
-	}
-	fmt.Printf("OCSP Request (DER in hex):\n%x\n", ocspReqDER)
-
-	// Get the responder URL from the leaf certificate.
-	if len(signedLeafCert.OCSPServer) == 0 {
-		t.Fatalf("no OCSP server URL in leaf certificate")
-	}
-	ocspURL := signedLeafCert.OCSPServer[0]
-	fmt.Printf("OCSP Responder URL: %s\n", ocspURL)
-
-	server := httptest.NewServer(http.HandlerFunc(HandleOcsp))
-	defer server.Close()
 
 	// Create an OCSP request using the leaf and issuer certificates.
-	ocspReqDER, err = ocsp.CreateRequest(signedLeafCert, rootCert, nil)
+	status, err := performOCSPTestRequest(leafCert, rootCert)
 	if err != nil {
-		t.Fatalf("failed to create OCSP request: %v", err)
+		t.Fatalf("Failed to create ocsp request. %v", err)
 	}
-
-	// Send the OCSP request to our test server.
-	resp, err := http.Post(server.URL, "application/ocsp-request", bytes.NewReader(ocspReqDER))
-	if err != nil {
-		t.Fatalf("failed to send OCSP request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Verify the Content-Type of the response.
-	if ct := resp.Header.Get("Content-Type"); ct != "application/ocsp-response" {
-		t.Fatalf("unexpected content type: %s", ct)
-	}
-
-	// Read the binary OCSP response.
-	ocspRespDER, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("failed to read OCSP response: %v", err)
-	}
-	ocspResp, err := ocsp.ParseResponse(ocspRespDER, nil)
-	if err != nil {
-		t.Fatalf("failed to parse OCSP response: %v", err)
-	}
-
-	// Log the raw binary response in hexadecimal.
-	fmt.Println("OCSP Response Status:", ocspResp.Status)
-	if ocspResp.Status != 0 {
+	if status != 0 {
 		t.Fatalf("Expected OCSP state good ")
 	}
-	// Now revoke the cert...
 
+	// Now revoke the cert
 	var spki subjectPublicKeyInfo
 	if _, err := asn1.Unmarshal(rootCert.RawSubjectPublicKeyInfo, &spki); err != nil {
 		fmt.Errorf("failed to unmarshal subjectPublicKeyInfo: %w", err)
 	}
 	hash := sha1.Sum(spki.SubjectPublicKey.Bytes)
 	issuerKHash := hex.EncodeToString(hash[:])
-	err = HandleAddRevokedCertTest(issuerKHash, signedLeafCert.SerialNumber.String(), signedLeafCert.NotAfter)
+	err = HandleAddRevokedCertTest(issuerKHash, leafCert.SerialNumber.String(), leafCert.NotAfter)
 	if err != nil {
 		t.Fatalf("Failed to revoke cert. %v", err)
 	}
 
-	f, err := HandleListRevokedCertsTest()
+	// Create an OCSP request using the leaf and issuer certificates.
+	status, err = performOCSPTestRequest(leafCert, rootCert)
 	if err != nil {
-		t.Fatalf("Failed to list certificates. %v", err)
+		t.Fatalf("Failed to create ocsp request. %v", err)
 	}
-	fmt.Printf("Listed revoked certificates: %+v\n", f)
-
-	resp, err = http.Post(server.URL, "application/ocsp-request", bytes.NewReader(ocspReqDER))
-	if err != nil {
-		t.Fatalf("failed to send OCSP request: %v", err)
-	}
-	defer resp.Body.Close()
-
-	// Verify the Content-Type of the response.
-	if ct := resp.Header.Get("Content-Type"); ct != "application/ocsp-response" {
-		t.Fatalf("unexpected content type: %s", ct)
-	}
-
-	// Read the binary OCSP response.
-	ocspRespDER, err = io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("failed to read OCSP response: %v", err)
-	}
-	ocspResp, err = ocsp.ParseResponse(ocspRespDER, nil)
-	if err != nil {
-		t.Fatalf("failed to parse OCSP response: %v", err)
-	}
-
-	if ocspResp.Status != 1 {
+	if status != 1 {
 		t.Fatalf("Expected OCSP state revoked ")
 	}
 
 	//Not undo the revocation
-	err = HandleRemoveRevokedCertTest(issuerKHash, signedLeafCert.SerialNumber.String())
+	err = HandleRemoveRevokedCertTest(issuerKHash, leafCert.SerialNumber.String())
 	if err != nil {
 		t.Fatalf("Failed to revoke cert. %v", err)
 	}
 
-	resp, err = http.Post(server.URL, "application/ocsp-request", bytes.NewReader(ocspReqDER))
+	// Create an OCSP request using the leaf and issuer certificates.
+	status, err = performOCSPTestRequest(leafCert, rootCert)
 	if err != nil {
-		t.Fatalf("failed to send OCSP request: %v", err)
+		t.Fatalf("Failed to create ocsp request. %v", err)
 	}
-	defer resp.Body.Close()
-
-	// Verify the Content-Type of the response.
-	if ct := resp.Header.Get("Content-Type"); ct != "application/ocsp-response" {
-		t.Fatalf("unexpected content type: %s", ct)
-	}
-
-	// Read the binary OCSP response.
-	ocspRespDER, err = io.ReadAll(resp.Body)
-	if err != nil {
-		t.Fatalf("failed to read OCSP response: %v", err)
-	}
-	ocspResp, err = ocsp.ParseResponse(ocspRespDER, nil)
-	if err != nil {
-		t.Fatalf("failed to parse OCSP response: %v", err)
-	}
-
-	if ocspResp.Status != 0 {
+	if status != 0 {
 		t.Fatalf("Expected OCSP state good ")
 	}
-
-	// Log the raw binary response in hexadecimal.
-	fmt.Println("OCSP Response Status:", ocspResp.Status)
 
 	// Remove the Responder
 	fmt.Println("Removing ocsp responder ...")
@@ -480,7 +434,7 @@ func TestCertgen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to upload cert. %v", err)
 	}
-	certs, err = HandleListCertsTest()
+	certs, err := HandleListCertsTest()
 	if err != nil {
 		t.Fatalf("Failed to list certificates. %v", err)
 	}
