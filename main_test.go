@@ -184,14 +184,14 @@ func HandleListCertsTest() ([]string, error) {
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(HandleListCerts)
+	handler := http.HandlerFunc(HandleListResponderCerts)
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		return []string{}, fmt.Errorf("Status ist not OK: %v", rr.Code)
 	}
 
-	var response ListCertsResponse
+	var response ListResponderCertsResponse
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	if err != nil {
 		return []string{}, err
@@ -494,14 +494,14 @@ func OCSPCerts() ([]string, error) {
 
 	rr := httptest.NewRecorder()
 
-	handler := http.HandlerFunc(HandleListCerts)
+	handler := http.HandlerFunc(HandleListResponderCerts)
 	handler.ServeHTTP(rr, req)
 
 	if rr.Code != http.StatusOK {
 		return []string{}, fmt.Errorf("Status ist not OK: %v", rr.Code)
 	}
 
-	var response ListCertsResponse
+	var response ListResponderCertsResponse
 	err := json.NewDecoder(rr.Body).Decode(&response)
 	if err != nil {
 		return []string{}, err

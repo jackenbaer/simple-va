@@ -35,7 +35,7 @@ func StartPrivateListener() {
 	http.HandleFunc(fmt.Sprintf("/%s/createnewcsr", ApiVersion), HandleCreateNewCsr)
 	http.HandleFunc(fmt.Sprintf("/%s/uploadsignedcert", ApiVersion), HandleUploadSignedCert)
 	http.HandleFunc(fmt.Sprintf("/%s/removeresponder", ApiVersion), HandleRemoveResponder)
-	http.HandleFunc(fmt.Sprintf("/%s/listcerts", ApiVersion), HandleListCerts)
+	http.HandleFunc(fmt.Sprintf("/%s/listcerts", ApiVersion), HandleListResponderCerts)
 	http.HandleFunc(fmt.Sprintf("/%s/addrevokedcert", ApiVersion), HandleAddRevokedCert)
 	http.HandleFunc(fmt.Sprintf("/%s/listrevokedcerts", ApiVersion), HandleListRevokedCerts)
 
