@@ -24,6 +24,7 @@ type RemoveRevokeCertRequest struct {
 
 // HandleRemoveRevokedCert
 // @Summary      Remove a revoked certificate from the list
+// @Tags         RevokedCertListAction
 // @Description  Remove a revoked certificate from the list
 // @Produce      application/json
 // @Success      200  {string}  string  "Certificate successfully removed"
@@ -64,6 +65,7 @@ type ListRevokedCertsResponse struct {
 
 // HandleLisRevokedCerts
 // @Summary      List all revoked certificates
+// @Tags         RevokedCertListAction
 // @Description  Retrieves all revoked certificates
 // @Produce      application/json
 // @Success      200  {object}  ListRevokedCertsResponse
@@ -89,6 +91,7 @@ type AddRevokeCertRequest struct {
 
 // HandleAddRevokedCert
 // @Summary      Add a revoked certificate
+// @Tags         RevokedCertListAction
 // @Description  Marks a certificate as revoked using issuer key hash, serial number, and revocation metadata.
 // @Accept       application/json
 // @Produce      application/json
