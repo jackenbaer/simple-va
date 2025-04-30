@@ -100,7 +100,6 @@ type AddRevokeCertRequest struct {
 // @Failure      400  {string}  string  "Invalid request"
 // @Failure      500  {string}  string  "Failed to revoke certificate"
 // @Router       /v1/addrevokedcert [post]
-
 func HandleAddRevokedCert(w http.ResponseWriter, r *http.Request) {
 	if !authorize(w, r) {
 		return
