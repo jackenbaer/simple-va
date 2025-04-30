@@ -29,6 +29,32 @@ import (
 	"golang.org/x/crypto/ocsp"
 )
 
+func HandleRemoveRevokedCertTest(issuerKeyHash string, serialNumber string) error {
+	requestBody := RemoveRevokeCertRequest{
+		IssuerKeyHash: issuerKeyHash,
+		SerialNumber:  serialNumber,
+	}
+
+	bodyBytes, err := json.Marshal(requestBody)
+	if err != nil {
+		return err
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/v1/removerevokedcert", bytes.NewReader(bodyBytes))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", "123")
+
+	rr := httptest.NewRecorder()
+
+	handler := http.HandlerFunc(HandleRemoveRevokedCert)
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		return fmt.Errorf("Status ist not OK: %v", rr.Code)
+	}
+	return nil
+}
+
 func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	// Define a valid request payload
 	requestBody := createNewCsrRequest{
@@ -72,7 +98,7 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 }
 
 func HandleAddRevokedCertTest(issuerKeyHash string, serialNumber string, expirationDate time.Time) error {
-	requestBody := RevokeCertRequest{
+	requestBody := AddRevokeCertRequest{
 		IssuerKeyHash:    issuerKeyHash,
 		SerialNumber:     serialNumber,
 		ExpirationDate:   expirationDate,
@@ -412,6 +438,37 @@ func TestCertgen(t *testing.T) {
 
 	if ocspResp.Status != 1 {
 		t.Fatalf("Expected OCSP state revoked ")
+	}
+
+	//Not undo the revocation
+	err = HandleRemoveRevokedCertTest(issuerKHash, signedLeafCert.SerialNumber.String())
+	if err != nil {
+		t.Fatalf("Failed to revoke cert. %v", err)
+	}
+
+	resp, err = http.Post(server.URL, "application/ocsp-request", bytes.NewReader(ocspReqDER))
+	if err != nil {
+		t.Fatalf("failed to send OCSP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Verify the Content-Type of the response.
+	if ct := resp.Header.Get("Content-Type"); ct != "application/ocsp-response" {
+		t.Fatalf("unexpected content type: %s", ct)
+	}
+
+	// Read the binary OCSP response.
+	ocspRespDER, err = io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatalf("failed to read OCSP response: %v", err)
+	}
+	ocspResp, err = ocsp.ParseResponse(ocspRespDER, nil)
+	if err != nil {
+		t.Fatalf("failed to parse OCSP response: %v", err)
+	}
+
+	if ocspResp.Status != 0 {
+		t.Fatalf("Expected OCSP state good ")
 	}
 
 	// Log the raw binary response in hexadecimal.

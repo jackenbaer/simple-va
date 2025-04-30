@@ -6,6 +6,15 @@ definitions:
           type: string
         type: array
     type: object
+  main.ListRevokedCertsResponse:
+    properties:
+      revoked_certs:
+        additionalProperties:
+          additionalProperties:
+            $ref: '#/definitions/storage.OCSPEntry'
+          type: object
+        type: object
+    type: object
   main.RemoveResponderRequest:
     properties:
       issuer_certificate:
@@ -28,6 +37,21 @@ definitions:
   main.createNewCsrResponse:
     properties:
       csr:
+        type: string
+    type: object
+  storage.OCSPEntry:
+    properties:
+      expiration_date:
+        description: Certificate expiration date
+        type: string
+      revocation_date:
+        description: Revocation date
+        type: string
+      revocation_reason:
+        description: Revocation reason
+        type: string
+      serial_number:
+        description: Serial number (hex)
         type: string
     type: object
 info:
@@ -69,6 +93,17 @@ paths:
           schema:
             $ref: '#/definitions/main.ListCertsResponse'
       summary: List all OCSP certificates
+  /v1/listrevokedcerts:
+    get:
+      description: Retrieves all revoked certificates
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ListRevokedCertsResponse'
+      summary: List all revoked certificates
   /v1/removeresponder:
     post:
       consumes:
@@ -98,6 +133,17 @@ paths:
           schema:
             type: string
       summary: Remove an OCSP responder
+  /v1/removerevokedcert:
+    post:
+      description: Remove a revoked certificate from the list
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Certificate successfully removed
+          schema:
+            type: string
+      summary: Remove a revoked certificate from the list
   /v1/uploadsignedcert:
     post:
       consumes:

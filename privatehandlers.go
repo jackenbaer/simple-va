@@ -17,6 +17,47 @@ type subjectPublicKeyInfo struct {
 	SubjectPublicKey asn1.BitString
 }
 
+type RemoveRevokeCertRequest struct {
+	IssuerKeyHash string `json:"issuer_key_hash"`
+	SerialNumber  string `json:"serial_number"`
+}
+
+// HandleRemoveRevokedCert
+// @Summary      Remove a revoked certificate from the list
+// @Description  Remove a revoked certificate from the list
+// @Produce      application/json
+// @Success      200  {string}  string  "Certificate successfully removed"
+// @Router       /v1/removerevokedcert [post]
+func HandleRemoveRevokedCert(w http.ResponseWriter, r *http.Request) {
+	if !authorize(w, r) {
+		return
+	}
+	if !validateMethod(w, r, http.MethodPost) {
+		return
+	}
+
+	//Validation
+	var req RemoveRevokeCertRequest
+	if !decodeJSONRequest(w, r, &req) {
+		return
+	}
+
+	exists, err := CertStatus.Remove(req.IssuerKeyHash, req.SerialNumber)
+	if err != nil {
+		Logger.Error("failed to revoke certificate",
+			"error", err,
+			"stack", string(debug.Stack()),
+		)
+		http.Error(w, "Failed to revoke Certificate", http.StatusInternalServerError)
+	}
+	if !exists {
+		Logger.Info("Certificate did not exists")
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte("Certificate successfully revoked"))
+
+}
+
 type ListRevokedCertsResponse struct {
 	RevokedCerts map[string]map[string]storage.OCSPEntry `json:"revoked_certs"`
 }
@@ -38,7 +79,7 @@ func HandleListRevokedCerts(w http.ResponseWriter, r *http.Request) {
 	writeJSONResponse(w, http.StatusOK, ListRevokedCertsResponse{RevokedCerts: CertStatus.List()})
 }
 
-type RevokeCertRequest struct {
+type AddRevokeCertRequest struct {
 	IssuerKeyHash    string    `json:"issuer_key_hash"`
 	SerialNumber     string    `json:"serial_number"`
 	RevocationReason string    `json:"revocation_reason"`
@@ -46,12 +87,17 @@ type RevokeCertRequest struct {
 	ExpirationDate   time.Time `json:"expiration_date"`
 }
 
-// HandleRevokeCert
-// @Summary      Revoke TLS certificate
-// @Description  Revokes a TLS certificate by issuer key hash and serial number.
+// HandleAddRevokedCert
+// @Summary      Add a revoked certificate
+// @Description  Marks a certificate as revoked using issuer key hash, serial number, and revocation metadata.
+// @Accept       application/json
 // @Produce      application/json
-// @Success      200  {object}  RevokeCertRequest
+// @Param        cert body AddRevokeCertRequest true "Certificate revocation details"
+// @Success      200  {string}  string  "Certificate successfully revoked"
+// @Failure      400  {string}  string  "Invalid request"
+// @Failure      500  {string}  string  "Failed to revoke certificate"
 // @Router       /v1/revokecert [post]
+
 func HandleAddRevokedCert(w http.ResponseWriter, r *http.Request) {
 	if !authorize(w, r) {
 		return
@@ -61,7 +107,7 @@ func HandleAddRevokedCert(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//Validation
-	var req RevokeCertRequest
+	var req AddRevokeCertRequest
 	if !decodeJSONRequest(w, r, &req) {
 		return
 	}
