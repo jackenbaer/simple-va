@@ -8,8 +8,6 @@ import (
 	"net/http"
 	"os"
 	"runtime/debug"
-	"simple-va/security"
-	"simple-va/storage"
 )
 
 // Default, will be overwritten at build time by the pipeline
@@ -21,10 +19,10 @@ var (
 )
 var identity *Identity
 var ocspCertManager *OCSPCertManager
-var CertStatus *storage.CertStatus
+var CertStatus *CertState
 var Logger *slog.Logger
 var Config *Configuration
-var ApiKeys *security.ApiKeyStore
+var ApiKeys *ApiKeyStore
 
 func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
@@ -89,7 +87,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ApiKeys = &security.ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
+	ApiKeys = &ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
 	err = ApiKeys.Init()
 	if err != nil {
 		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
@@ -107,7 +105,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	CertStatus = &storage.CertStatus{CertStatusPath: Config.CertStatusPath}
+	CertStatus = &CertState{CertStatusPath: Config.CertStatusPath}
 	err = CertStatus.Init()
 	if err != nil {
 		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))

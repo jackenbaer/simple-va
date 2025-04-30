@@ -93,18 +93,6 @@ func (c *Configuration) Validate() error {
 	if err != nil {
 		return err
 	}
-	_, err = os.Stat(filepath.Dir(c.PrivateKeyPath))
-	if os.IsNotExist(err) {
-		return err
-	}
-	_, err = os.Stat(c.CertsFolderPath)
-	if os.IsNotExist(err) {
-		return err
-	}
-	_, err = os.Stat(c.HashedApiKeysPath)
-	if os.IsNotExist(err) {
-		return err
-	}
 
 	return nil
 }

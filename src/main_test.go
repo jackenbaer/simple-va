@@ -21,8 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime/debug"
-	"simple-va/security"
-	"simple-va/storage"
 	"testing"
 	"time"
 
@@ -199,7 +197,7 @@ func HandleListCertsTest() ([]string, error) {
 	return response.Certificates, nil
 }
 
-func HandleListRevokedCertsTest() (map[string]map[string]storage.OCSPEntry, error) {
+func HandleListRevokedCertsTest() (map[string]map[string]OCSPEntry, error) {
 	req := httptest.NewRequest(http.MethodGet, "/v1/listrevokedcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-API-Key", "123")
@@ -469,7 +467,7 @@ func TestMain(m *testing.M) {
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
-	tmpDir := "simple-va"
+	tmpDir := "../simple-va"
 	err := os.Mkdir(tmpDir, 0755)
 	if err != nil {
 		if os.IsExist(err) {
@@ -488,7 +486,7 @@ func TestMain(m *testing.M) {
 		PrivateKeyPath:          filepath.Join(tmpDir, "priv.pem"),
 		CertsFolderPath:         filepath.Join(tmpDir, "certs"),
 		CertStatusPath:          filepath.Join(tmpDir, "statuslist.json"),
-		HashedApiKeysPath:       "./testdata/security/hashed_api_keys.json",
+		HashedApiKeysPath:       "../testdata/security/hashed_api_keys.json",
 		PrivateEndpointKeyPath:  "",
 		PrivateEndpointCertPath: "",
 	}
@@ -496,13 +494,13 @@ func TestMain(m *testing.M) {
 	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig
 	if err != nil {
 		if os.IsExist(err) {
-			Logger.Error("cannot create cert dir", "error", err)
+			Logger.Warn("cannot create cert dir", "error", err)
 		} else {
 			Logger.Error("Unexpected error while creating directory:", "error", err)
 			os.Exit(1)
 		}
 	}
-	ApiKeys = &security.ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
+	ApiKeys = &ApiKeyStore{HashedApiKeyFile: Config.HashedApiKeysPath}
 	err = ApiKeys.Init()
 	if err != nil {
 		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
@@ -527,7 +525,7 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 
-	CertStatus = &storage.CertStatus{CertStatusPath: Config.CertStatusPath}
+	CertStatus = &CertState{CertStatusPath: Config.CertStatusPath}
 	err = CertStatus.Init()
 	if err != nil {
 		Logger.Error("Failed to init ocsp certificate manager", "error", err, "stack", string(debug.Stack()))

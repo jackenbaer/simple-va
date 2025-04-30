@@ -1,4 +1,4 @@
-package storage
+package main
 
 import (
 	"path/filepath"
@@ -9,7 +9,7 @@ import (
 func TestAddAndGet(t *testing.T) {
 	// 1) prepare empty DB in a temp directory
 	tmpFile := filepath.Join(t.TempDir(), "ocsp.json")
-	db := &CertStatus{
+	db := &CertState{
 		StatusMap:      make(map[string]map[string]OCSPEntry),
 		CertStatusPath: tmpFile,
 	}
@@ -35,7 +35,7 @@ func TestAddAndGet(t *testing.T) {
 	}
 
 	// 4) reload from disk to prove JSON got written
-	dbReload := &CertStatus{
+	dbReload := &CertState{
 		StatusMap:      make(map[string]map[string]OCSPEntry),
 		CertStatusPath: tmpFile,
 	}
@@ -51,7 +51,7 @@ func TestRemove(t *testing.T) {
 	// temp DB file
 	tmp := filepath.Join(t.TempDir(), "ocsp.json")
 
-	db := &CertStatus{
+	db := &CertState{
 		StatusMap:      make(map[string]map[string]OCSPEntry),
 		CertStatusPath: tmp,
 	}
@@ -90,7 +90,7 @@ func TestRemove(t *testing.T) {
 func TestRemoveExpired(t *testing.T) {
 	tmp := filepath.Join(t.TempDir(), "ocsp.json")
 
-	db := &CertStatus{
+	db := &CertState{
 		StatusMap:      make(map[string]map[string]OCSPEntry),
 		CertStatusPath: tmp,
 	}
@@ -116,7 +116,7 @@ func TestRemoveExpired(t *testing.T) {
 	}
 
 	// optionally reload from disk to ensure persistence
-	reloaded := &CertStatus{
+	reloaded := &CertState{
 		StatusMap:      make(map[string]map[string]OCSPEntry),
 		CertStatusPath: tmp,
 	}

@@ -1,4 +1,4 @@
-package storage
+package main
 
 import (
 	"encoding/json"
@@ -16,13 +16,13 @@ type OCSPEntry struct {
 }
 
 // CertStatus manages the OCSP entries
-type CertStatus struct {
+type CertState struct {
 	StatusMap      map[string]map[string]OCSPEntry // IssuerKeyHash → SerialNumber → OCSPEntry
 	Mu             sync.RWMutex                    // Allows concurrent reads, exclusive writes
 	CertStatusPath string
 }
 
-func (db *CertStatus) Init() error {
+func (db *CertState) Init() error {
 	db.Mu.Lock()
 	defer db.Mu.Unlock()
 
@@ -43,7 +43,7 @@ func (db *CertStatus) Init() error {
 	return nil
 }
 
-func (db *CertStatus) saveJsonToDisk() error {
+func (db *CertState) saveJsonToDisk() error {
 	file, err := os.Create(db.CertStatusPath)
 	if err != nil {
 		return err
@@ -54,7 +54,7 @@ func (db *CertStatus) saveJsonToDisk() error {
 	return encoder.Encode(db.StatusMap)
 }
 
-func (db *CertStatus) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
+func (db *CertState) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
 	db.Mu.Lock()
 	defer db.Mu.Unlock()
 
@@ -70,11 +70,11 @@ func (db *CertStatus) AddEntry(issuerKeyHash string, entry OCSPEntry) error {
 	return db.saveJsonToDisk()
 }
 
-func (db *CertStatus) List() map[string]map[string]OCSPEntry {
+func (db *CertState) List() map[string]map[string]OCSPEntry {
 	return db.StatusMap // IssuerKeyHash → SerialNumber → OCSPEntry
 }
 
-func (db *CertStatus) GetEntry(issuerKeyHash string, serialNumber string) (OCSPEntry, bool) {
+func (db *CertState) GetEntry(issuerKeyHash string, serialNumber string) (OCSPEntry, bool) {
 	db.Mu.RLock()
 	defer db.Mu.RUnlock()
 
@@ -87,7 +87,7 @@ func (db *CertStatus) GetEntry(issuerKeyHash string, serialNumber string) (OCSPE
 	return entry, found
 }
 
-func (db *CertStatus) Remove(issuerKeyHash, serialNumber string) (bool, error) {
+func (db *CertState) Remove(issuerKeyHash, serialNumber string) (bool, error) {
 	db.Mu.Lock()
 	defer db.Mu.Unlock()
 
@@ -108,7 +108,7 @@ func (db *CertStatus) Remove(issuerKeyHash, serialNumber string) (bool, error) {
 }
 
 // RemoveExpired drops every entry whose ExpirationDate is before now without blocking parallel readers while it scans.
-func (db *CertStatus) RemoveExpired(now time.Time) error {
+func (db *CertState) RemoveExpired(now time.Time) error {
 	//create copy of map under read lock
 	db.Mu.RLock()
 	newMap := make(map[string]map[string]OCSPEntry, len(db.StatusMap))

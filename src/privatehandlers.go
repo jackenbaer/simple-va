@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
-	"simple-va/storage"
 	"time"
 )
 
@@ -60,7 +59,7 @@ func HandleRemoveRevokedCert(w http.ResponseWriter, r *http.Request) {
 }
 
 type ListRevokedCertsResponse struct {
-	RevokedCerts map[string]map[string]storage.OCSPEntry `json:"revoked_certs"`
+	RevokedCerts map[string]map[string]OCSPEntry `json:"revoked_certs"`
 }
 
 // HandleListRevokedCerts
@@ -113,7 +112,7 @@ func HandleAddRevokedCert(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSONRequest(w, r, &req) {
 		return
 	}
-	ocsp := storage.OCSPEntry{
+	ocsp := OCSPEntry{
 		ExpirationDate:   req.ExpirationDate,
 		RevocationDate:   req.RevocationDate,
 		RevocationReason: req.RevocationReason,
@@ -163,7 +162,6 @@ func HandleListResponderCerts(w http.ResponseWriter, r *http.Request) {
 
 type UploadSignedCertRequest struct {
 	SignedCert string `json:"signed_certificate"`
-
 	IssuerCert string `json:"issuer_certificate"`
 }
 
