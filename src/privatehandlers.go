@@ -31,7 +31,7 @@ type RemoveRevokeCertRequest struct {
 // @Success      200  {string}  string  "Certificate successfully removed"
 // @Failure      400  {string}  string  "Invalid request"
 // @Failure      500  {string}  string  "Failed to remove certificate"
-// @Router       /v1/removerevokedcert [post]
+// @Router       /v1.0.0/removerevokedcert [post]
 func HandleRemoveRevokedCert(w http.ResponseWriter, r *http.Request) {
 
 	//Validation
@@ -66,7 +66,7 @@ type ListRevokedCertsResponse struct {
 // @Tags         RevokedCertsAction
 // @Produce      application/json
 // @Success      200  {object}  ListRevokedCertsResponse
-// @Router       /v1/listrevokedcerts [get]
+// @Router       /v1.0.0/listrevokedcerts [get]
 func HandleListRevokedCerts(w http.ResponseWriter, r *http.Request) {
 
 	writeJSONResponse(w, http.StatusOK, ListRevokedCertsResponse{RevokedCerts: CertStatus.List()})
@@ -90,7 +90,7 @@ type AddRevokeCertRequest struct {
 // @Success      200  {string}  string  "Certificate successfully revoked"
 // @Failure      400  {string}  string  "Invalid request"
 // @Failure      500  {string}  string  "Failed to revoke certificate"
-// @Router       /v1/addrevokedcert [post]
+// @Router       /v1.0.0/addrevokedcert [post]
 func HandleAddRevokedCert(w http.ResponseWriter, r *http.Request) {
 
 	//Validation
@@ -129,7 +129,7 @@ type ListResponderCertsResponse struct {
 // @Tags         ResponderCertsAction
 // @Produce      application/json
 // @Success      200  {object}  ListResponderCertsResponse
-// @Router       /v1/listrespondercerts [get]
+// @Router       /v1.0.0/listrespondercerts [get]
 func HandleListResponderCerts(w http.ResponseWriter, r *http.Request) {
 
 	certs := []string{}
@@ -155,7 +155,7 @@ type UploadSignedCertRequest struct {
 // @Success      200      {string}  string  "Certificate uploaded successfully"
 // @Failure      400      {string}  string  "Bad request (e.g. missing fields)"
 // @Failure      500      {string}  string  "Failed to upload certificate"
-// @Router       /v1/uploadsignedcert [post]
+// @Router       /v1.0.0/uploadsignedcert [post]
 func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 
 	//Validation
@@ -219,7 +219,7 @@ type RemoveResponderRequest struct {
 // @Success      200      {string}  string  "Certificate successfully removed"
 // @Failure      400      {string}  string  "Bad request (e.g. invalid JSON)"
 // @Failure      500      {string}  string  "Failed to remove certificate"
-// @Router       /v1/removeresponder [post]
+// @Router       /v1.0.0/removeresponder [post]
 func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
 
 	//Validation
@@ -281,7 +281,7 @@ type createNewCsrResponse struct {
 // @Param        payload  body  createNewCsrRequest  true  "Common name for the CSR"
 // @Success      200      {object}  createNewCsrResponse
 // @Failure      400      {string}  string  "CommonName is required or CSR generation failed"
-// @Router       /v1/createnewcsr [post]
+// @Router       /v1.0.0/createnewcsr [post]
 func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
 
 	//Validation

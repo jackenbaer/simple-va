@@ -38,7 +38,7 @@ func HandleRemoveRevokedCertTest(issuerKeyHash string, serialNumber string) erro
 		return err
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/removerevokedcert", bytes.NewReader(bodyBytes))
+	req := httptest.NewRequest(http.MethodPost, "/v1.0.0/removerevokedcert", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -107,7 +107,7 @@ func HandleAddRevokedCertTest(issuerKeyHash string, serialNumber string, expirat
 		return err
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/addrevokedcert", bytes.NewReader(bodyBytes))
+	req := httptest.NewRequest(http.MethodPost, "/v1.0.0/addrevokedcert", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -132,7 +132,7 @@ func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Cert
 		return err
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/removeresponder", bytes.NewReader(bodyBytes))
+	req := httptest.NewRequest(http.MethodPost, "/v1.0.0/removeresponder", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -156,7 +156,7 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 		return err
 	}
 
-	req := httptest.NewRequest(http.MethodPost, "/v1/createnewidentity", bytes.NewReader(bodyBytes))
+	req := httptest.NewRequest(http.MethodPost, "/v1.0.0/createnewidentity", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -171,7 +171,7 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 }
 
 func HandleListCertsTest() ([]string, error) {
-	req := httptest.NewRequest(http.MethodGet, "/v1/listcerts", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1.0.0/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()
@@ -192,7 +192,7 @@ func HandleListCertsTest() ([]string, error) {
 }
 
 func ApiKeyAuhTest(apiKey string) int {
-	req := httptest.NewRequest(http.MethodGet, "/v1/listcerts", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1.0.0/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Add("X-API-Key", apiKey)
 
@@ -206,7 +206,7 @@ func ApiKeyAuhTest(apiKey string) int {
 }
 
 func HandleListRevokedCertsTest() (map[string]map[string]OCSPEntry, error) {
-	req := httptest.NewRequest(http.MethodGet, "/v1/listrevokedcerts", nil)
+	req := httptest.NewRequest(http.MethodGet, "/v1.0.0/listrevokedcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
 
 	rr := httptest.NewRecorder()

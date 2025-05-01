@@ -15,7 +15,7 @@ var (
 	Version    = "dev"
 	Commit     = "none"
 	BuildTime  = "unknown"
-	ApiVersion = "v1"
+	ApiVersion = "v1.0.0"
 )
 var identity *Identity
 var ocspCertManager *OCSPCertManager

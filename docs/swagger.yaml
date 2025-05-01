@@ -101,7 +101,7 @@ definitions:
 info:
   contact: {}
 paths:
-  /v1/addrevokedcert:
+  /v1.0.0/addrevokedcert:
     post:
       consumes:
       - application/json
@@ -132,7 +132,7 @@ paths:
       summary: Add a revoked certificate
       tags:
       - RevokedCertsAction
-  /v1/createnewcsr:
+  /v1.0.0/createnewcsr:
     post:
       consumes:
       - application/json
@@ -158,7 +158,7 @@ paths:
       summary: Create a new Certificate Signing Request (CSR)
       tags:
       - ResponderCertsAction
-  /v1/listrespondercerts:
+  /v1.0.0/listrespondercerts:
     get:
       description: Retrieves all OCSP responder certificates stored in the manager,
         returned as PEM-encoded strings.
@@ -172,7 +172,7 @@ paths:
       summary: List all OCSP certificates
       tags:
       - ResponderCertsAction
-  /v1/listrevokedcerts:
+  /v1.0.0/listrevokedcerts:
     get:
       description: Retrieves all revoked certificates
       produces:
@@ -185,7 +185,7 @@ paths:
       summary: List all revoked certificates
       tags:
       - RevokedCertsAction
-  /v1/removeresponder:
+  /v1.0.0/removeresponder:
     post:
       consumes:
       - application/json
@@ -216,7 +216,7 @@ paths:
       summary: Remove an OCSP responder
       tags:
       - ResponderCertsAction
-  /v1/removerevokedcert:
+  /v1.0.0/removerevokedcert:
     post:
       consumes:
       - application/json
@@ -246,7 +246,7 @@ paths:
       summary: Remove a revoked certificate from the list
       tags:
       - RevokedCertsAction
-  /v1/uploadsignedcert:
+  /v1.0.0/uploadsignedcert:
     post:
       consumes:
       - application/json
