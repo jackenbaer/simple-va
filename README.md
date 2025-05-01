@@ -11,12 +11,18 @@ This tool is for teams operating in segmented networks who need certificate revo
 - A documented REST API for easy integration and future migration to a more powerful CA system
 
 
+---
+
+## REST endpoint documention
+Visit [swagger document](https://simple-va.de) to take a look at all provided REST API endpoint including expected json formats. 
+
+
 ## Getting Started – Registering an OCSP signer
 
 This mini-guide shows how to register a working **OCSP responder
 certificate** in your REST backend 
 
-### 1  Create a local root CA (or use the root CA in your existing PKI)
+- Create a local root CA (or use the root CA in your existing PKI)
 
 ```bash
 # Private key (P-256)
@@ -28,7 +34,7 @@ openssl req -new -x509 -key root.key.pem -sha256 -days 3650 \
             -out root.crt.pem
 ```
 
-### 2 Create a new CSR 
+- Create a new CSR 
 ```bash
 curl -sS -X POST http://localhost:8080/createnewcsr \
      -H 'Content-Type: application/json' \
@@ -36,7 +42,7 @@ curl -sS -X POST http://localhost:8080/createnewcsr \
   | jq -r '.csr' > ocsp.csr.pem
 ```
 
-### 3 Sign the CSR with your root CA
+- Sign the CSR with your root CA
 ```bash
 openssl x509 -req -in ocsp.csr.pem \
   -CA root.crt.pem -CAkey root.key.pem -CAcreateserial \
@@ -45,7 +51,7 @@ openssl x509 -req -in ocsp.csr.pem \
 ```
 
 
-### 4 Upload Signed Cert 
+- Upload Signed Cert 
 ```bash
 jq -Rs -n \
    --arg sc "$(cat ocsp.crt.pem)" \
@@ -57,12 +63,18 @@ jq -Rs -n \
 # expected result: HTTP 201 Created
 ```
 
-Now you are ready to go !
+
+- Now you are ready to go. Revoke other certs issued by the root ca and check if everything works. 
+
+```
+openssl ocsp -issuer issuer.crt -cert server.crt \
+             -url http://ocsp.example-ca.com \
+             -VAfile issuer.crt \
+             -nonce -text -resp_text
+```
+
+
 ---
-
-## REST endpoint documention
-Visit [swagger document](https://simple-va.de) to take a look at all provided REST API endpoint including expected json formats. 
-
 ## Protect your private endpoints with api key authentication
 - Store your API-keys in a JSON file that maps the SHA-256 hash of each key to a human-readable comment:
 ```
