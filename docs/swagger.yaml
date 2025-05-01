@@ -51,20 +51,37 @@ definitions:
   main.RemoveResponderRequest:
     properties:
       issuer_certificate:
+        example: |-
+          -----BEGIN CERTIFICATE-----
+          MIID...AB
+          -----END CERTIFICATE-----
         type: string
       ocsp_certificate:
+        example: |-
+          -----BEGIN CERTIFICATE-----
+          MIIF...AB
+          -----END CERTIFICATE-----
         type: string
     type: object
   main.UploadSignedCertRequest:
     properties:
       issuer_certificate:
+        example: |-
+          -----BEGIN CERTIFICATE-----
+          MIIF...CD
+          -----END CERTIFICATE-----
         type: string
       signed_certificate:
+        example: |-
+          -----BEGIN CERTIFICATE-----
+          MIID...AB
+          -----END CERTIFICATE-----
         type: string
     type: object
   main.createNewCsrRequest:
     properties:
       common_name:
+        example: simple-va.de
         type: string
     type: object
   main.createNewCsrResponse:
