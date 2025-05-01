@@ -84,7 +84,7 @@ For example:
 head -c1000000 /dev/urandom | sha256sum
 ```
 
-Copy that raw key, then hash it once more to put the hash value (not the raw key) into the JSON file:
+- Copy that raw key, then hash it once more to put the hash value (not the raw key) into the JSON file:
 ```
 echo 609c2191eff864c82d3a71cfb29a411dae9febbf1c67ab561fd6970119492525 | sha256sum 
 ```
