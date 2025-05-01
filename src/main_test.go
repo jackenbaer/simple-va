@@ -461,24 +461,52 @@ func OCSPCerts() ([]string, error) {
 	return response.Certificates, nil
 }
 
+func WriteTempFile(prefix string, content string, logger func(msg string, keyvals ...interface{})) (string, func(), error) {
+	tmpfile, err := os.CreateTemp("", prefix+"*")
+	if err != nil {
+		logger("failed to create temp file", "error", err)
+		return "", nil, err
+	}
+
+	if _, err := tmpfile.WriteString(content); err != nil {
+		logger("failed to write to temp file", "error", err)
+		tmpfile.Close()
+		os.Remove(tmpfile.Name())
+		return "", nil, err
+	}
+
+	if err := tmpfile.Close(); err != nil {
+		logger("failed to close temp file", "error", err)
+		os.Remove(tmpfile.Name())
+		return "", nil, err
+	}
+
+	cleanup := func() {
+		if err := os.Remove(tmpfile.Name()); err != nil {
+			logger("failed to remove temp file", "error", err)
+		}
+	}
+
+	return tmpfile.Name(), cleanup, nil
+}
 func TestMain(m *testing.M) {
 
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
-	tmpDir, err := os.MkdirTemp("", "simple-va-*")
+	// Create temporary /var/lib like folder
+	varLibFolder, err := os.MkdirTemp("", "simple-va-*")
 	if err != nil {
 		Logger.Error("Failed to create temp dir", "error", err)
 	}
-
 	defer func() {
-		if err := os.RemoveAll(tmpDir); err != nil {
+		if err := os.RemoveAll(varLibFolder); err != nil {
 			Logger.Error("Failed to remove temp dir", "error", err)
 		}
 	}()
 
-	data := `
+	apiKeyList := `
 	{
  "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123",
  "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "abc",
@@ -488,27 +516,20 @@ func TestMain(m *testing.M) {
  "37dcdb91da663f093c5bf45e103ddb3e486082b7e8357363ca4600f3aaf7e8dd": "j/3hr93h.,d7fhe3JSHk/6%$§7($&/\"§6-#'*~df"
 }`
 
-	tmpfile, err := os.CreateTemp("", "apikey-*.json")
+	apiKeyListPath, cleanup, err := WriteTempFile("apikey-", apiKeyList, Logger.Error)
 	if err != nil {
-		Logger.Error("failed to create temp file: %v", "error", err)
+		// Handle error accordingly
+		return
 	}
-	defer os.Remove(tmpfile.Name()) // Clean up
+	defer cleanup()
 
-	_, err = tmpfile.WriteString(data)
-	if err != nil {
-		Logger.Error("failed to write config to temp file: %v", "error", err)
-	}
-	err = tmpfile.Close()
-	if err != nil {
-		Logger.Error("failed to close temp file: %v", "error", err)
-	}
 	Config = &Configuration{
 		HostnamePrivateApi:      "localhost:8080",
 		HostnamePublicApi:       "localhost:8081",
-		PrivateKeyPath:          filepath.Join(tmpDir, "priv.pem"),
-		CertsFolderPath:         filepath.Join(tmpDir, "certs"),
-		CertStatusPath:          filepath.Join(tmpDir, "statuslist.json"),
-		HashedApiKeysPath:       tmpfile.Name(),
+		PrivateKeyPath:          filepath.Join(varLibFolder, "priv.pem"),
+		CertsFolderPath:         filepath.Join(varLibFolder, "certs"),
+		CertStatusPath:          filepath.Join(varLibFolder, "statuslist.json"),
+		HashedApiKeysPath:       apiKeyListPath,
 		PrivateEndpointKeyPath:  "",
 		PrivateEndpointCertPath: "",
 	}
@@ -551,8 +572,6 @@ func TestMain(m *testing.M) {
 		os.Exit(1)
 	}
 	code := m.Run()
-
-	go StartPublicListener()
-
+	Logger.Info("Executed")
 	os.Exit(code)
 }
