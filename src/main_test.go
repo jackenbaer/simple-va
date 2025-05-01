@@ -467,18 +467,16 @@ func TestMain(m *testing.M) {
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
-	tmpDir := "../simple-va"
-	err := os.Mkdir(tmpDir, 0755)
+	tmpDir, err := os.MkdirTemp("", "simple-va-*")
 	if err != nil {
-		if os.IsExist(err) {
-			Logger.Warn("Directory already exists (expected error):", "error", err)
-		} else {
-			Logger.Error("Unexpected error while creating directory:", "error", err)
-		}
-	} else {
-		Logger.Warn("Directory was created successfully")
-		defer os.RemoveAll(tmpDir)
+		Logger.Error("Failed to create temp dir: %v", err)
 	}
+
+	defer func() {
+		if err := os.RemoveAll(tmpDir); err != nil {
+			Logger.Error("Failed to remove temp dir: %v", err)
+		}
+	}()
 
 	Config = &Configuration{
 		HostnamePrivateApi:      "localhost:8080",
@@ -486,7 +484,7 @@ func TestMain(m *testing.M) {
 		PrivateKeyPath:          filepath.Join(tmpDir, "priv.pem"),
 		CertsFolderPath:         filepath.Join(tmpDir, "certs"),
 		CertStatusPath:          filepath.Join(tmpDir, "statuslist.json"),
-		HashedApiKeysPath:       "../testdata/security/hashed_api_keys.json",
+		HashedApiKeysPath:       "",
 		PrivateEndpointKeyPath:  "",
 		PrivateEndpointCertPath: "",
 	}
