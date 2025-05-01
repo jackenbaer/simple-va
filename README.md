@@ -62,3 +62,32 @@ Now you are ready to go !
 
 ## REST endpoint documention
 Visit [swagger document](https://simple-va.de) to take a look at all provided REST API endpoint including expected json formats. 
+
+## Protect your private endpoints with api key authentication
+- Store your API-keys in a JSON file that maps the SHA-256 hash of each key to a human-readable comment:
+```
+{
+  "HASHED_API_KEY": "COMMENT",
+}
+```
+
+For example: 
+```
+{
+  "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "tim",
+  "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "service 123",
+}
+```
+
+- Create a strong random key locally, for example:
+```
+head -c1000000 /dev/urandom | sha256sum
+```
+
+Copy that raw key, then hash it once more to put the hash value (not the raw key) into the JSON file:
+```
+echo 609c2191eff864c82d3a71cfb29a411dae9febbf1c67ab561fd6970119492525 | sha256sum 
+```
+
+- In your configuration file set hashed_api_keys_path to the JSON file’s path.
+If you leave the path empty (""), API-key authentication is turned off and every endpoint stays open.
