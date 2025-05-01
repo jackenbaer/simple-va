@@ -64,21 +64,37 @@ func StartPrivateListener() {
 
 func main() {
 	var versionFlag bool
+	var helpFlag bool
+	var configPath string
+
+	flag.BoolVar(&helpFlag, "help", false, "Print the help documentation")
+	flag.BoolVar(&helpFlag, "h", false, "Print the help documentation")
 
 	flag.BoolVar(&versionFlag, "version", false, "Print the version of the binary")
-	flag.BoolVar(&versionFlag, "v", false, "Print the version of the binary (shorthand)")
+	flag.BoolVar(&versionFlag, "v", false, "Print the version of the binary")
+
+	flag.StringVar(&configPath, "config", "/etc/simple-va/config.ini", "Path to configuration file")
+	flag.StringVar(&configPath, "c", "/etc/simple-va/config.ini", "Path to configuration file ")
 
 	flag.Parse()
 
-	if versionFlag {
+	switch {
+	case versionFlag:
 		fmt.Printf("%s,%s,%s,%s\n", Version, Commit, BuildTime, ApiVersion)
-		os.Exit(0)
+		return
+	case helpFlag:
+		flag.Usage()
+		return
+	default:
+		fmt.Printf("Using config file: %s\n", configPath)
 	}
+
 	handler := slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})
 	Logger = slog.New(handler)
 	Logger.Info("#########################  STARTING  #########################", "version", Version, "commit", Commit, "build_time", BuildTime)
 
-	err := Config.LoadFromFile("./config.ini")
+	Config = &Configuration{}
+	err := Config.LoadFromFile(configPath)
 	if err != nil {
 		Logger.Error("Failed to validate configuration", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
