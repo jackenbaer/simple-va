@@ -9,6 +9,17 @@ import (
 	"strings"
 )
 
+type Configuration struct {
+	HostnamePrivateApi      string `ini:"hostname_private_api"`
+	HostnamePublicApi       string `ini:"hostname_public_api"`
+	PrivateKeyPath          string `ini:"private_key_path"`
+	CertsFolderPath         string `ini:"certificate_path"`
+	CertStatusPath          string `ini:"cert_status_path"`
+	HashedApiKeysPath       string `ini:"hashed_api_keys_path"`
+	PrivateEndpointCertPath string `ini:"private_endpoint_cert_path"`
+	PrivateEndpointKeyPath  string `ini:"private_endpoint_key_path"`
+}
+
 // parseINI reads KEY=VALUE lines into a map (ignores blanks / # comments).
 func parseINI(path string) (map[string]string, error) {
 	f, err := os.Open(path)
@@ -28,11 +39,18 @@ func parseINI(path string) (map[string]string, error) {
 		if len(kv) != 2 {
 			return nil, fmt.Errorf("invalid line: %q", line)
 		}
-		out[strings.TrimSpace(kv[0])] = strings.TrimSpace(kv[1])
+		key := strings.TrimSpace(kv[0])
+		val := strings.TrimSpace(kv[1])
+
+		// Remove inline comment from value
+		if idx := strings.Index(val, "#"); idx != -1 {
+			val = strings.TrimSpace(val[:idx])
+		}
+
+		out[key] = val
 	}
 	return out, s.Err()
 }
-
 func loadConfig(m map[string]string) (Configuration, error) {
 	var cfg Configuration
 	v := reflect.ValueOf(&cfg).Elem()
@@ -51,17 +69,6 @@ func loadConfig(m map[string]string) (Configuration, error) {
 		v.Field(i).SetString(val)
 	}
 	return cfg, nil
-}
-
-type Configuration struct {
-	HostnamePrivateApi      string `ini:"hostname_private_api"`
-	HostnamePublicApi       string `ini:"hostname_public_api"`
-	PrivateKeyPath          string `ini:"private_key_path"`
-	CertsFolderPath         string `ini:"certificate_path"`
-	CertStatusPath          string `ini:"cert_status_path"`
-	HashedApiKeysPath       string `ini:"hashed_api_keys_path"`
-	PrivateEndpointCertPath string `ini:"private_endpoint_cert_path"`
-	PrivateEndpointKeyPath  string `ini:"private_endpoint_key_path"`
 }
 
 func (c *Configuration) LoadFromFile(f string) error {

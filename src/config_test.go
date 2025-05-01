@@ -81,6 +81,20 @@ private_endpoint_key_path=""
 `,
 			wantErr: true,
 		},
+		{
+			name: "comment behind key",
+			iniData: `
+hostname_private_api = localhost:8080
+hostname_public_api = localhost:8081   # testcomment 
+private_key_path = ./simple-va/priv.pem
+certificate_path =  ./simple-va/certs/
+hashed_api_keys_path = ./testdata/security/hashed_api_keys.json
+cert_status_path = ./simple-va/statuslist.json
+private_endpoint_cert_path=""
+private_endpoint_key_path=""
+`,
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
