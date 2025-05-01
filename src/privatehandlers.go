@@ -81,11 +81,11 @@ func HandleListRevokedCerts(w http.ResponseWriter, r *http.Request) {
 }
 
 type AddRevokeCertRequest struct {
-	IssuerKeyHash    string    `json:"issuer_key_hash"`
-	SerialNumber     string    `json:"serial_number"`
-	RevocationReason string    `json:"revocation_reason"`
-	RevocationDate   time.Time `json:"revocation_date"`
-	ExpirationDate   time.Time `json:"expiration_date"`
+	IssuerKeyHash    string    `json:"issuer_key_hash" example:"10d8ff2cf856bac45cb80e8fb83a566cd3535d93"`
+	SerialNumber     string    `json:"serial_number" example:"1234"`
+	RevocationReason string    `json:"revocation_reason" example:"1"`
+	RevocationDate   time.Time `json:"revocation_date" example:"2025-05-01T12:00:00Z"`
+	ExpirationDate   time.Time `json:"expiration_date" example:"2025-12-31T23:59:59Z"`
 }
 
 // HandleAddRevokedCert

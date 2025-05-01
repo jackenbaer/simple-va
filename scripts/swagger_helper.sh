@@ -1,2 +1,2 @@
 go install github.com/swaggo/swag/cmd/swag@latest
-swag init --output docs --outputTypes yaml
+swag init --dir ./src  --output docs --outputTypes yaml

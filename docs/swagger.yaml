@@ -2,14 +2,19 @@ definitions:
   main.AddRevokeCertRequest:
     properties:
       expiration_date:
+        example: "2025-12-31T23:59:59Z"
         type: string
       issuer_key_hash:
+        example: 10d8ff2cf856bac45cb80e8fb83a566cd3535d93
         type: string
       revocation_date:
+        example: "2025-05-01T12:00:00Z"
         type: string
       revocation_reason:
+        example: "1"
         type: string
       serial_number:
+        example: "1234"
         type: string
     type: object
   main.ListResponderCertsResponse:
@@ -24,9 +29,24 @@ definitions:
       revoked_certs:
         additionalProperties:
           additionalProperties:
-            $ref: '#/definitions/storage.OCSPEntry'
+            $ref: '#/definitions/main.OCSPEntry'
           type: object
         type: object
+    type: object
+  main.OCSPEntry:
+    properties:
+      expiration_date:
+        description: Certificate expiration date
+        type: string
+      revocation_date:
+        description: Revocation date
+        type: string
+      revocation_reason:
+        description: Revocation reason
+        type: string
+      serial_number:
+        description: Serial number (hex)
+        type: string
     type: object
   main.RemoveResponderRequest:
     properties:
@@ -50,21 +70,6 @@ definitions:
   main.createNewCsrResponse:
     properties:
       csr:
-        type: string
-    type: object
-  storage.OCSPEntry:
-    properties:
-      expiration_date:
-        description: Certificate expiration date
-        type: string
-      revocation_date:
-        description: Revocation date
-        type: string
-      revocation_reason:
-        description: Revocation reason
-        type: string
-      serial_number:
-        description: Serial number (hex)
         type: string
     type: object
 info:
