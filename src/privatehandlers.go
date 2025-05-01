@@ -25,8 +25,12 @@ type RemoveRevokeCertRequest struct {
 // @Summary      Remove a revoked certificate from the list
 // @Description  Remove a revoked certificate from the list
 // @Tags         RevokedCertsAction
+// @Accept       application/json
 // @Produce      application/json
+// @Param        cert body RemoveRevokeCertRequest true "Certificate revocation removal details"
 // @Success      200  {string}  string  "Certificate successfully removed"
+// @Failure      400  {string}  string  "Invalid request"
+// @Failure      500  {string}  string  "Failed to remove certificate"
 // @Router       /v1/removerevokedcert [post]
 func HandleRemoveRevokedCert(w http.ResponseWriter, r *http.Request) {
 	if !authorize(w, r) {
@@ -62,17 +66,14 @@ type ListRevokedCertsResponse struct {
 	RevokedCerts map[string]map[string]OCSPEntry `json:"revoked_certs"`
 }
 
-// HandleRemoveRevokedCert
-// @Summary      Remove a revoked certificate from the list
-// @Description  Remove a revoked certificate from the list
-// @Tags         RevokedCertsAction
-// @Accept       application/json
-// @Produce      application/json
+// HandleListRevokedCerts
+// @Summary      List all revoked certificates
+// @Description  Retrieves all revoked certificates
 // @Param        cert body RemoveRevokeCertRequest true "Certificate revocation removal details"
-// @Success      200  {string}  string  "Certificate successfully removed"
-// @Failure      400  {string}  string  "Invalid request"
-// @Failure      500  {string}  string  "Failed to remove certificate"
-// @Router       /v1/removerevokedcert [post]
+// @Tags         RevokedCertsAction
+// @Produce      application/json
+// @Success      200  {object}  ListRevokedCertsResponse
+// @Router       /v1/listrevokedcerts [get]
 func HandleListRevokedCerts(w http.ResponseWriter, r *http.Request) {
 	if !authorize(w, r) {
 		return

@@ -24,6 +24,30 @@ definitions:
           type: string
         type: array
     type: object
+  main.ListRevokedCertsResponse:
+    properties:
+      revoked_certs:
+        additionalProperties:
+          additionalProperties:
+            $ref: '#/definitions/main.OCSPEntry'
+          type: object
+        type: object
+    type: object
+  main.OCSPEntry:
+    properties:
+      expiration_date:
+        description: Certificate expiration date
+        type: string
+      revocation_date:
+        description: Revocation date
+        type: string
+      revocation_reason:
+        description: Revocation reason
+        type: string
+      serial_number:
+        description: Serial number (hex)
+        type: string
+    type: object
   main.RemoveResponderRequest:
     properties:
       issuer_certificate:
@@ -148,6 +172,26 @@ paths:
       summary: List all OCSP certificates
       tags:
       - ResponderCertsAction
+  /v1/listrevokedcerts:
+    get:
+      description: Retrieves all revoked certificates
+      parameters:
+      - description: Certificate revocation removal details
+        in: body
+        name: cert
+        required: true
+        schema:
+          $ref: '#/definitions/main.RemoveRevokeCertRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/main.ListRevokedCertsResponse'
+      summary: List all revoked certificates
+      tags:
+      - RevokedCertsAction
   /v1/removeresponder:
     post:
       consumes:
