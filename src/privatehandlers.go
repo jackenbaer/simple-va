@@ -17,8 +17,8 @@ type subjectPublicKeyInfo struct {
 }
 
 type RemoveRevokeCertRequest struct {
-	IssuerKeyHash string `json:"issuer_key_hash"`
-	SerialNumber  string `json:"serial_number"`
+	IssuerKeyHash string `json:"issuer_key_hash" example:"10d8ff2cf856bac45cb80e8fb83a566cd3535d93"`
+	SerialNumber  string `json:"serial_number" example:"1234"`
 }
 
 // HandleRemoveRevokedCert
@@ -161,8 +161,8 @@ func HandleListResponderCerts(w http.ResponseWriter, r *http.Request) {
 }
 
 type UploadSignedCertRequest struct {
-	SignedCert string `json:"signed_certificate"`
-	IssuerCert string `json:"issuer_certificate"`
+	SignedCert string `json:"signed_certificate" example:"-----BEGIN CERTIFICATE-----\nMIID...AB\n-----END CERTIFICATE-----"`
+	IssuerCert string `json:"issuer_certificate" example:"-----BEGIN CERTIFICATE-----\nMIIF...CD\n-----END CERTIFICATE-----"`
 }
 
 // HandleUploadSignedCert
@@ -231,8 +231,8 @@ func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
 }
 
 type RemoveResponderRequest struct {
-	IssuerCert string `json:"issuer_certificate"`
-	OcspCert   string `json:"ocsp_certificate"`
+	IssuerCert string `json:"issuer_certificate" example:"-----BEGIN CERTIFICATE-----\nMIID...AB\n-----END CERTIFICATE-----"`
+	OcspCert   string `json:"ocsp_certificate" example:"-----BEGIN CERTIFICATE-----\nMIIF...AB\n-----END CERTIFICATE-----"`
 }
 
 // HandleRemoveResponder
@@ -296,7 +296,7 @@ func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
 }
 
 type createNewCsrRequest struct {
-	CommonName string `json:"common_name"`
+	CommonName string `json:"common_name" example:"simple-va.de"`
 }
 
 type createNewCsrResponse struct {
