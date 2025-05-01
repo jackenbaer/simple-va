@@ -469,35 +469,14 @@ func TestMain(m *testing.M) {
 
 	tmpDir, err := os.MkdirTemp("", "simple-va-*")
 	if err != nil {
-		Logger.Error("Failed to create temp dir: %v", err)
+		Logger.Error("Failed to create temp dir", "error", err)
 	}
 
 	defer func() {
 		if err := os.RemoveAll(tmpDir); err != nil {
-			Logger.Error("Failed to remove temp dir: %v", err)
+			Logger.Error("Failed to remove temp dir", "error", err)
 		}
 	}()
-
-	Config = &Configuration{
-		HostnamePrivateApi:      "localhost:8080",
-		HostnamePublicApi:       "localhost:8081",
-		PrivateKeyPath:          filepath.Join(tmpDir, "priv.pem"),
-		CertsFolderPath:         filepath.Join(tmpDir, "certs"),
-		CertStatusPath:          filepath.Join(tmpDir, "statuslist.json"),
-		HashedApiKeysPath:       "",
-		PrivateEndpointKeyPath:  "",
-		PrivateEndpointCertPath: "",
-	}
-
-	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig
-	if err != nil {
-		if os.IsExist(err) {
-			Logger.Warn("cannot create cert dir", "error", err)
-		} else {
-			Logger.Error("Unexpected error while creating directory:", "error", err)
-			os.Exit(1)
-		}
-	}
 
 	data := `
 	{
@@ -508,6 +487,7 @@ func TestMain(m *testing.M) {
  "d248723280e75fbd29aaf90974ed224e4adc54fb8617835a14be7fc0085cc461": "dummy14@email.de",
  "37dcdb91da663f093c5bf45e103ddb3e486082b7e8357363ca4600f3aaf7e8dd": "j/3hr93h.,d7fhe3JSHk/6%$§7($&/\"§6-#'*~df"
 }`
+
 	tmpfile, err := os.CreateTemp("", "apikey-*.json")
 	if err != nil {
 		Logger.Error("failed to create temp file: %v", "error", err)
@@ -522,9 +502,29 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		Logger.Error("failed to close temp file: %v", "error", err)
 	}
+	Config = &Configuration{
+		HostnamePrivateApi:      "localhost:8080",
+		HostnamePublicApi:       "localhost:8081",
+		PrivateKeyPath:          filepath.Join(tmpDir, "priv.pem"),
+		CertsFolderPath:         filepath.Join(tmpDir, "certs"),
+		CertStatusPath:          filepath.Join(tmpDir, "statuslist.json"),
+		HashedApiKeysPath:       tmpfile.Name(),
+		PrivateEndpointKeyPath:  "",
+		PrivateEndpointCertPath: "",
+	}
+
+	err = os.Mkdir(Config.CertsFolderPath, 0o755) // system-tmp, automatisch eindeutig
+	if err != nil {
+		if os.IsExist(err) {
+			Logger.Warn("cannot create cert dir", "error", err)
+		} else {
+			Logger.Error("Unexpected error while creating directory:", "error", err)
+			os.Exit(1)
+		}
+	}
 
 	ApiKeys = &ApiKeyStore{}
-	err = ApiKeys.LoadFromFile(tmpfile.Name())
+	err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
 	if err != nil {
 		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
