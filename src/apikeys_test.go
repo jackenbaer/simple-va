@@ -100,7 +100,7 @@ func TestNewAPIKeyStoreFromFile(t *testing.T) {
 	}
 }
 
-func TestIsAuthorized(t *testing.T) {
+func TestIsAuthenticated(t *testing.T) {
 	tests := []struct {
 		name    string
 		testKey string
@@ -169,8 +169,8 @@ func TestIsAuthorized(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if a.IsAuthorized(tt.testKey) == tt.wantErr {
-				t.Errorf("IsAuthorized(%q), wantErr %v", tt.testKey, tt.wantErr)
+			if a.IsAuthenticated(tt.testKey) == tt.wantErr {
+				t.Errorf("IsAuthenticated(%q), wantErr %v", tt.testKey, tt.wantErr)
 			}
 		})
 	}

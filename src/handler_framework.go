@@ -2,19 +2,38 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"runtime/debug"
 )
 
-func authorize(w http.ResponseWriter, r *http.Request) bool {
+func Middleware(expectedMethod string, next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !authenticate(w, r) {
+			http.Error(w, "Unauthorized", http.StatusUnauthorized)
+			return
+		}
+
+		if !validateMethod(w, r, expectedMethod) {
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	}
+}
+func authenticate(w http.ResponseWriter, r *http.Request) bool {
 	if r == nil || r.Header == nil {
 		return false
 	}
 	key := r.Header.Get("X-API-Key")
-	if !ApiKeys.Enabled {
+
+	if Config.HashedApiKeysPath == "" { // Authentication is disabled
 		return true
 	}
-	return ApiKeys.IsAuthorized(key)
+	y := ApiKeys.IsAuthenticated(key)
+	fmt.Printf("key = %s, authenticated = %t\n", key, y)
+
+	return y
 }
 
 // Unified method validator

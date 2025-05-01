@@ -13,7 +13,6 @@ import (
 type ApiKeyStore struct {
 	hashMap map[string]string
 	mu      sync.RWMutex
-	Enabled bool //decide if apikey authentication is enabled
 }
 
 // NewAPIKeyStoreFromFile reads hashed apikeys from a json file and returns them as a map (key = hash, value = comment)
@@ -43,8 +42,8 @@ func (s *ApiKeyStore) LoadFromFile(filepath string) error {
 	return nil
 }
 
-// IsAuthorized checks whether the hashed API key is loaded
-func (s *ApiKeyStore) IsAuthorized(key string) bool {
+// IsAuthenticated checks whether the hashed API key is loaded
+func (s *ApiKeyStore) IsAuthenticated(key string) bool {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

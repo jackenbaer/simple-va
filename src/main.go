@@ -30,13 +30,18 @@ func StartPublicListener() {
 }
 
 func StartPrivateListener() {
-	http.HandleFunc(fmt.Sprintf("/%s/createnewcsr", ApiVersion), HandleCreateNewCsr)
-	http.HandleFunc(fmt.Sprintf("/%s/uploadsignedcert", ApiVersion), HandleUploadSignedCert)
-	http.HandleFunc(fmt.Sprintf("/%s/removeresponder", ApiVersion), HandleRemoveResponder)
-	http.HandleFunc(fmt.Sprintf("/%s/listcerts", ApiVersion), HandleListResponderCerts)
-	http.HandleFunc(fmt.Sprintf("/%s/addrevokedcert", ApiVersion), HandleAddRevokedCert)
-	http.HandleFunc(fmt.Sprintf("/%s/removerevokedcert", ApiVersion), HandleRemoveRevokedCert)
-	http.HandleFunc(fmt.Sprintf("/%s/listrevokedcerts", ApiVersion), HandleListRevokedCerts)
+	route := func(path, method string, h http.HandlerFunc) {
+		http.HandleFunc(fmt.Sprintf("/%s/%s", ApiVersion, path),
+			Middleware(method, h))
+	}
+
+	route("createnewcsr", http.MethodPost, HandleCreateNewCsr)
+	route("uploadsignedcert", http.MethodPost, HandleUploadSignedCert)
+	route("removeresponder", http.MethodDelete, HandleRemoveResponder)
+	route("listcerts", http.MethodGet, HandleListResponderCerts)
+	route("addrevokedcert", http.MethodPost, HandleAddRevokedCert)
+	route("removerevokedcert", http.MethodDelete, HandleRemoveRevokedCert)
+	route("listrevokedcerts", http.MethodGet, HandleListRevokedCerts)
 
 	if Config.PrivateEndpointCertPath == "" || Config.PrivateEndpointKeyPath == "" {
 		err := http.ListenAndServe(Config.HostnamePublicApi, nil)

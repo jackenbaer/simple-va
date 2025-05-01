@@ -33,12 +33,6 @@ type RemoveRevokeCertRequest struct {
 // @Failure      500  {string}  string  "Failed to remove certificate"
 // @Router       /v1/removerevokedcert [post]
 func HandleRemoveRevokedCert(w http.ResponseWriter, r *http.Request) {
-	if !authorize(w, r) {
-		return
-	}
-	if !validateMethod(w, r, http.MethodPost) {
-		return
-	}
 
 	//Validation
 	var req RemoveRevokeCertRequest
@@ -74,12 +68,6 @@ type ListRevokedCertsResponse struct {
 // @Success      200  {object}  ListRevokedCertsResponse
 // @Router       /v1/listrevokedcerts [get]
 func HandleListRevokedCerts(w http.ResponseWriter, r *http.Request) {
-	if !authorize(w, r) {
-		return
-	}
-	if !validateMethod(w, r, http.MethodGet) {
-		return
-	}
 
 	writeJSONResponse(w, http.StatusOK, ListRevokedCertsResponse{RevokedCerts: CertStatus.List()})
 }
@@ -104,12 +92,6 @@ type AddRevokeCertRequest struct {
 // @Failure      500  {string}  string  "Failed to revoke certificate"
 // @Router       /v1/addrevokedcert [post]
 func HandleAddRevokedCert(w http.ResponseWriter, r *http.Request) {
-	if !authorize(w, r) {
-		return
-	}
-	if !validateMethod(w, r, http.MethodPost) {
-		return
-	}
 
 	//Validation
 	var req AddRevokeCertRequest
@@ -149,12 +131,6 @@ type ListResponderCertsResponse struct {
 // @Success      200  {object}  ListResponderCertsResponse
 // @Router       /v1/listrespondercerts [get]
 func HandleListResponderCerts(w http.ResponseWriter, r *http.Request) {
-	if !authorize(w, r) {
-		return
-	}
-	if !validateMethod(w, r, http.MethodGet) {
-		return
-	}
 
 	certs := []string{}
 	for _, v := range ocspCertManager.ListOCSPCerts() {
@@ -181,12 +157,6 @@ type UploadSignedCertRequest struct {
 // @Failure      500      {string}  string  "Failed to upload certificate"
 // @Router       /v1/uploadsignedcert [post]
 func HandleUploadSignedCert(w http.ResponseWriter, r *http.Request) {
-	if !authorize(w, r) {
-		return
-	}
-	if !validateMethod(w, r, http.MethodPost) {
-		return
-	}
 
 	//Validation
 	var req UploadSignedCertRequest
@@ -251,12 +221,7 @@ type RemoveResponderRequest struct {
 // @Failure      500      {string}  string  "Failed to remove certificate"
 // @Router       /v1/removeresponder [post]
 func HandleRemoveResponder(w http.ResponseWriter, r *http.Request) {
-	if !authorize(w, r) {
-		return
-	}
-	if !validateMethod(w, r, http.MethodPost) {
-		return
-	}
+
 	//Validation
 	var req RemoveResponderRequest
 	if !decodeJSONRequest(w, r, &req) {
@@ -318,12 +283,6 @@ type createNewCsrResponse struct {
 // @Failure      400      {string}  string  "CommonName is required or CSR generation failed"
 // @Router       /v1/createnewcsr [post]
 func HandleCreateNewCsr(w http.ResponseWriter, r *http.Request) {
-	if !authorize(w, r) {
-		return
-	}
-	if !validateMethod(w, r, http.MethodPost) {
-		return
-	}
 
 	//Validation
 	var req createNewCsrRequest

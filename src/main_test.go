@@ -40,7 +40,6 @@ func HandleRemoveRevokedCertTest(issuerKeyHash string, serialNumber string) erro
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/removerevokedcert", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -66,7 +65,6 @@ func HandleCreateNewCsrTest() (*x509.CertificateRequest, error) {
 	// Create a new HTTP request
 	req := httptest.NewRequest(http.MethodPost, "/createnewidentity", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("X-API-Key", "123")
 
 	// Create a ResponseRecorder to capture the response
 	rr := httptest.NewRecorder()
@@ -111,7 +109,6 @@ func HandleAddRevokedCertTest(issuerKeyHash string, serialNumber string, expirat
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/addrevokedcert", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -137,7 +134,6 @@ func HandleRemoveResponderTest(certToRevoke *x509.Certificate, caCert *x509.Cert
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/removeresponder", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -162,7 +158,6 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 
 	req := httptest.NewRequest(http.MethodPost, "/v1/createnewidentity", bytes.NewReader(bodyBytes))
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -178,7 +173,6 @@ func HandleUploadSignedCertTest(certificate *x509.Certificate, issuer *x509.Cert
 func HandleListCertsTest() ([]string, error) {
 	req := httptest.NewRequest(http.MethodGet, "/v1/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -197,10 +191,23 @@ func HandleListCertsTest() ([]string, error) {
 	return response.Certificates, nil
 }
 
+func ApiKeyAuhTest(apiKey string) int {
+	req := httptest.NewRequest(http.MethodGet, "/v1/listcerts", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Add("X-API-Key", apiKey)
+
+	rr := httptest.NewRecorder()
+
+	wrapped := Middleware(http.MethodGet, HandleListResponderCerts)
+	handler := http.HandlerFunc(wrapped)
+	handler.ServeHTTP(rr, req)
+
+	return rr.Code
+}
+
 func HandleListRevokedCertsTest() (map[string]map[string]OCSPEntry, error) {
 	req := httptest.NewRequest(http.MethodGet, "/v1/listrevokedcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -437,12 +444,22 @@ func TestCertgen(t *testing.T) {
 		t.Fatalf("Failed to list certificates. %v", err)
 	}
 	fmt.Printf("Listed certificates: %v\n", certs)
+
+	//valid api key
+	code := ApiKeyAuhTest("123")
+	if code != 200 {
+		t.Fatalf("Failed to authenticate with correct api key")
+	}
+	code = ApiKeyAuhTest("wrong")
+	if code != 401 {
+		t.Fatalf("Wrong apikey was able to authenticate")
+	}
+	//invalid api key
 }
 
 func OCSPCerts() ([]string, error) {
 	req := httptest.NewRequest(http.MethodGet, "/listcerts", nil)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Add("X-API-Key", "123")
 
 	rr := httptest.NewRecorder()
 
@@ -508,12 +525,7 @@ func TestMain(m *testing.M) {
 
 	apiKeyList := `
 	{
- "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123",
- "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad": "abc",
- "eea746d000233e477b770212ac1c3120cc458fa43551192de9910e3ae098ef02": "Tc47PO4hMIedGcdg809KiSUkXKH8EpjjM2WSs6Q0ZM",
- "744deeea2b059f16ceb4860f29baed003e7bd706a5418273753ceae40efcef96": "Super Man",
- "d248723280e75fbd29aaf90974ed224e4adc54fb8617835a14be7fc0085cc461": "dummy14@email.de",
- "37dcdb91da663f093c5bf45e103ddb3e486082b7e8357363ca4600f3aaf7e8dd": "j/3hr93h.,d7fhe3JSHk/6%$§7($&/\"§6-#'*~df"
+ "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3": "123"
 }`
 
 	apiKeyListPath, cleanup, err := WriteTempFile("apikey-", apiKeyList, Logger.Error)
