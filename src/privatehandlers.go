@@ -69,7 +69,6 @@ type ListRevokedCertsResponse struct {
 // HandleListRevokedCerts
 // @Summary      List all revoked certificates
 // @Description  Retrieves all revoked certificates
-// @Param        cert body RemoveRevokeCertRequest true "Certificate revocation removal details"
 // @Tags         RevokedCertsAction
 // @Produce      application/json
 // @Success      200  {object}  ListRevokedCertsResponse

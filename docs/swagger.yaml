@@ -175,13 +175,6 @@ paths:
   /v1/listrevokedcerts:
     get:
       description: Retrieves all revoked certificates
-      parameters:
-      - description: Certificate revocation removal details
-        in: body
-        name: cert
-        required: true
-        schema:
-          $ref: '#/definitions/main.RemoveRevokeCertRequest'
       produces:
       - application/json
       responses:
