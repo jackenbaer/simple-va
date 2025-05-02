@@ -103,17 +103,17 @@ jobs:
       - name: Export image to tar.gz
         run: |
           docker save simple-va:${{ github.ref_name }} \
-            | gzip > image_${{ github.ref_name }}.tar.gz
+            | gzip > docker_image_${{ github.ref_name }}.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:
-          name: docker-image
-          path: image_${{ github.ref_name }}.tar.gz
+          name: docker_image_${{ github.ref_name }}.tar.gz
+          path: docker_image_${{ github.ref_name }}.tar.gz
 
   release:
     if: ${{ inputs.do-release }}
     name: Create GitHub Release
-    needs: build
+    needs: [build, docker_image]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts
