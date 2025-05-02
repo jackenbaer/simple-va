@@ -43,7 +43,7 @@ func StartPrivateListener() {
 	route("removerevokedcert", http.MethodDelete, HandleRemoveRevokedCert)
 	route("listrevokedcerts", http.MethodGet, HandleListRevokedCerts)
 
-	if Config.PrivateEndpointCertPath == "" || Config.PrivateEndpointKeyPath == "" {
+	if Config.PrivateEndpointCertPath == "\"\"" || Config.PrivateEndpointKeyPath == "\"\"" {
 		err := http.ListenAndServe(Config.HostnamePublicApi, nil)
 		if err != nil {
 			Logger.Error("Error starting private API listener", "stack", string(debug.Stack()))
@@ -106,7 +106,6 @@ func main() {
 		Logger.Error("Failed to init identity", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
-	fmt.Println("Config.HashedApiKeysPath =", Config.HashedApiKeysPath)
 
 	ApiKeys = &ApiKeyStore{}
 	if Config.HashedApiKeysPath != "\"\"" {
