@@ -14,4 +14,5 @@ jobs:
       run-tests:      true
       do-build:      true
       run-vulncheck:  true
+      do-build-docker: true
       do-release:       ${{ startsWith(github.ref, 'refs/tags/') }}

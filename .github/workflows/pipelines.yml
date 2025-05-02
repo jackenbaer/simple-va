@@ -17,11 +17,13 @@ on:
         default: false
       do-check-api-version:
         type: boolean
-        default: false	
+        default: false  
       do-release:
         type: boolean
         default: false
-
+      do-build-docker:
+        type: boolean
+        default: false
 jobs:
   test:
     if: ${{ inputs.run-tests }}
@@ -80,6 +82,33 @@ jobs:
         with:
           name: simple-va-${{ matrix.os }}-${{ matrix.arch }}
           path: ./simple-va-${{ matrix.os }}-${{ matrix.arch }}*
+
+  docker_image:
+    if: ${{ inputs.do-build-docker }}
+    name: Build Docker image & tarball
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./build/docker/Dockerfile
+          push: false
+          tags: simple-va:${{ github.ref_name }}
+
+      - name: Export image to tar.gz
+        run: |
+          docker save simple-va:${{ github.ref_name }} \
+            | gzip > image_${{ github.ref_name }}.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker-image
+          path: image_${{ github.ref_name }}.tar.gz
 
   release:
     if: ${{ inputs.do-release }}
