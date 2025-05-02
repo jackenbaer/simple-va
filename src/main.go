@@ -49,7 +49,7 @@ func StartPrivateListener() {
 			Logger.Error("Error starting private API listener", "stack", string(debug.Stack()))
 			os.Exit(1)
 		}
-	} else if Config.PrivateEndpointCertPath != "" || Config.PrivateEndpointKeyPath != "" {
+	} else if Config.PrivateEndpointCertPath != "\"\"" || Config.PrivateEndpointKeyPath != "\"\"" {
 		err := http.ListenAndServeTLS(Config.HostnamePublicApi, Config.PrivateEndpointCertPath, Config.PrivateEndpointKeyPath, nil)
 		if err != nil {
 			Logger.Error("Error starting private TLS API listener", "stack", string(debug.Stack()))
@@ -106,9 +106,10 @@ func main() {
 		Logger.Error("Failed to init identity", "error", err, "stack", string(debug.Stack()))
 		os.Exit(1)
 	}
+	fmt.Println("Config.HashedApiKeysPath =", Config.HashedApiKeysPath)
 
 	ApiKeys = &ApiKeyStore{}
-	if Config.HashedApiKeysPath != "" {
+	if Config.HashedApiKeysPath != "\"\"" {
 		err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
 		if err != nil {
 			Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))

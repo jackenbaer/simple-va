@@ -46,6 +46,9 @@ func parseINI(path string) (map[string]string, error) {
 		if idx := strings.Index(val, "#"); idx != -1 {
 			val = strings.TrimSpace(val[:idx])
 		}
+		if strings.HasPrefix(val, "'") && strings.HasSuffix(val, "'") {
+			return nil, fmt.Errorf("single-quoted values are not allowed: %q", line)
+		}
 
 		out[key] = val
 	}
