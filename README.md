@@ -110,3 +110,19 @@ If you leave the path empty (""), API-key authentication is turned off and every
 ```
 docker load -i ~/Downloads/docker_image_v0.0.26.tar.gz
 ```
+
+```
+version: "3.9"
+
+services:
+  simple-va:
+    image: simple-va:latest
+    container_name: simple-va
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    volumes:
+      - ./config:/etc/simple-va
+      - ./certs:/var/lib/simple-va/certs
+    restart: unless-stopped
+```

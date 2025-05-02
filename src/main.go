@@ -26,6 +26,7 @@ var ApiKeys *ApiKeyStore
 
 func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
+	Logger.Info("Starting public ocsp listener...", "url", Config.HostnamePublicApi)
 	log.Fatal(http.ListenAndServe(Config.HostnamePrivateApi, nil))
 }
 
@@ -44,6 +45,7 @@ func StartPrivateListener() {
 	route("listrevokedcerts", http.MethodGet, HandleListRevokedCerts)
 
 	if Config.PrivateEndpointCertPath == "\"\"" || Config.PrivateEndpointKeyPath == "\"\"" {
+		Logger.Info("Starting private listener...", "url", Config.HostnamePrivateApi)
 		err := http.ListenAndServe(Config.HostnamePublicApi, nil)
 		if err != nil {
 			Logger.Error("Error starting private API listener", "stack", string(debug.Stack()))
@@ -59,7 +61,6 @@ func StartPrivateListener() {
 		Logger.Error("Error starting private API listener. Strange tls config")
 		os.Exit(1)
 	}
-
 }
 
 func main() {
