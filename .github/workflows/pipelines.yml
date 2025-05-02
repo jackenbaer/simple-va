@@ -99,6 +99,7 @@ jobs:
           file: ./build/docker/Dockerfile
           push: false
           tags: simple-va:${{ github.ref_name }}
+          outputs: type=docker
 
       - name: Export image to tar.gz
         run: |
