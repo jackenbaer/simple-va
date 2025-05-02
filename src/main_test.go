@@ -557,10 +557,12 @@ func TestMain(m *testing.M) {
 	}
 
 	ApiKeys = &ApiKeyStore{}
-	err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
-	if err != nil {
-		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
-		os.Exit(1)
+	if Config.HashedApiKeysPath != "" {
+		err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
+		if err != nil {
+			Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
+			os.Exit(1)
+		}
 	}
 
 	identity = &Identity{PrivateKeyPath: Config.PrivateKeyPath}

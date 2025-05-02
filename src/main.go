@@ -108,10 +108,12 @@ func main() {
 	}
 
 	ApiKeys = &ApiKeyStore{}
-	err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
-	if err != nil {
-		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
-		os.Exit(1)
+	if Config.HashedApiKeysPath != "" {
+		err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
+		if err != nil {
+			Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
+			os.Exit(1)
+		}
 	}
 
 	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
