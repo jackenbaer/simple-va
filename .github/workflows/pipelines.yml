@@ -113,6 +113,7 @@ jobs:
           push: true
           tags: |
             ${{ secrets.DOCKERHUB_USERNAME }}/simple-va:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/simple-va:latest
           outputs: type=docker
 
       - name: Export image to tar.gz
