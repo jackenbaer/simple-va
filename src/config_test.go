@@ -67,17 +67,16 @@ private_endpoint_key_path=""
 			wantErr: true,
 		},
 		{
-			name: "invalid path",
+			name: "single quotes",
 			iniData: `
 hostname_private_api = localhost:8080
 hostname_public_api = localhost:8081
 private_key_path = ./simple-va/priv.pem
 certificate_path =  ./simple-va/certs/
 hashed_api_keys_path = ./testdata/security/hashed_api_keys.json
-cert_status_path =  /test ./simple-va/statuslist.json
-private_endpoint_cert_path=""
+cert_status_path = ./simple-va/statuslist.json
+private_endpoint_cert_path=''
 private_endpoint_key_path=""
-
 `,
 			wantErr: true,
 		},
@@ -96,29 +95,24 @@ private_endpoint_key_path=""
 			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tmpfile, err := os.CreateTemp("", "config-*.ini")
 			if err != nil {
-				t.Fatalf("failed to create temp file: %v", err)
+				t.Fatalf("create temp: %v", err)
 			}
-			defer os.Remove(tmpfile.Name()) // Clean up
+			defer os.Remove(tmpfile.Name())
 
-			_, err = tmpfile.WriteString(tt.iniData)
-			if err != nil {
-				t.Fatalf("failed to write config to temp file: %v", err)
+			if _, err := tmpfile.WriteString(tt.iniData); err != nil {
+				t.Fatalf("write temp: %v", err)
 			}
-			err = tmpfile.Close()
-			if err != nil {
-				t.Fatalf("failed to close temp file: %v", err)
-			}
+			tmpfile.Close()
 
 			var cfg Configuration
 			err = cfg.LoadFromFile(tmpfile.Name())
-			if err != nil && !tt.wantErr {
-				t.Errorf("LoadFromFile failed: %v", err)
-				return
+
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("LoadFromFile() name = %s, error = %v, wantErr %v", tt.name, err, tt.wantErr)
 			}
 		})
 	}

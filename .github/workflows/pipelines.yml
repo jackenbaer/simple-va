@@ -17,11 +17,18 @@ on:
         default: false
       do-check-api-version:
         type: boolean
-        default: false	
+        default: false  
       do-release:
         type: boolean
         default: false
-
+      do-build-docker:
+        type: boolean
+        default: false
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
 jobs:
   test:
     if: ${{ inputs.run-tests }}
@@ -81,10 +88,50 @@ jobs:
           name: simple-va-${{ matrix.os }}-${{ matrix.arch }}
           path: ./simple-va-${{ matrix.os }}-${{ matrix.arch }}*
 
+  docker_image:
+    if: ${{ inputs.do-build-docker && !startsWith(github.ref, 'refs/pull/') }}
+    name: Build Docker image & tarball
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: write-all
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          logout: true
+
+      - uses: docker/build-push-action@v5
+        if: github.event_name == 'push' 
+        with:
+          context: .
+          file: ./build/docker/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/simple-va:${{ github.ref_name }}
+            ${{ secrets.DOCKERHUB_USERNAME }}/simple-va:latest
+          outputs: type=docker
+
+      - name: Export image to tar.gz
+        run: |
+          docker save ${{ secrets.DOCKERHUB_USERNAME }}/simple-va:${{ github.ref_name }} \
+            | gzip > docker_image_${{ github.ref_name }}.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: docker_image_${{ github.ref_name }}.tar.gz
+          path: docker_image_${{ github.ref_name }}.tar.gz
+        
+
   release:
     if: ${{ inputs.do-release }}
     name: Create GitHub Release
-    needs: build
+    needs: [build, docker_image]
     runs-on: ubuntu-latest
     steps:
       - name: Download artifacts

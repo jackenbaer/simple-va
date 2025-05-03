@@ -1,0 +1,13 @@
+version: "3.9"
+
+services:
+  simple-va:
+    image: jackenbaer/simple-va:latest
+    container_name: simple-va
+    ports:
+      - "8080:8080" 
+      - "8081:8081"
+    volumes:
+      - ./config:/etc/simple-va/  
+      - ./simple-va:/var/lib/simple-va/ 
+    restart: unless-stopped

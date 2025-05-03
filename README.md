@@ -103,3 +103,10 @@ echo 609c2191eff864c82d3a71cfb29a411dae9febbf1c67ab561fd6970119492525 | sha256su
 
 - In your configuration file set hashed_api_keys_path to the JSON file’s path.
 If you leave the path empty (""), API-key authentication is turned off and every endpoint stays open.
+
+
+# Installation
+## Docker 
+
+Checkout this [docker-compose.yaml](https://github.com/jackenbaer/simple-va/blob/main/build/docker/docker-compose.yaml) to simply getting started with a quick example. 
+Remove "volumes" if you just want to get a running container. 

@@ -1,0 +1,1 @@
+docker build -f build/docker/Dockerfile -t simple-va:test .

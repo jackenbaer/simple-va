@@ -26,6 +26,7 @@ var ApiKeys *ApiKeyStore
 
 func StartPublicListener() {
 	http.HandleFunc("/ocsp", HandleOcsp)
+	Logger.Info("Starting public ocsp listener...", "url", Config.HostnamePublicApi)
 	log.Fatal(http.ListenAndServe(Config.HostnamePrivateApi, nil))
 }
 
@@ -43,13 +44,14 @@ func StartPrivateListener() {
 	route("removerevokedcert", http.MethodDelete, HandleRemoveRevokedCert)
 	route("listrevokedcerts", http.MethodGet, HandleListRevokedCerts)
 
-	if Config.PrivateEndpointCertPath == "" || Config.PrivateEndpointKeyPath == "" {
+	if Config.PrivateEndpointCertPath == "\"\"" || Config.PrivateEndpointKeyPath == "\"\"" {
+		Logger.Info("Starting private listener...", "url", Config.HostnamePrivateApi)
 		err := http.ListenAndServe(Config.HostnamePublicApi, nil)
 		if err != nil {
 			Logger.Error("Error starting private API listener", "stack", string(debug.Stack()))
 			os.Exit(1)
 		}
-	} else if Config.PrivateEndpointCertPath != "" || Config.PrivateEndpointKeyPath != "" {
+	} else if Config.PrivateEndpointCertPath != "\"\"" || Config.PrivateEndpointKeyPath != "\"\"" {
 		err := http.ListenAndServeTLS(Config.HostnamePublicApi, Config.PrivateEndpointCertPath, Config.PrivateEndpointKeyPath, nil)
 		if err != nil {
 			Logger.Error("Error starting private TLS API listener", "stack", string(debug.Stack()))
@@ -59,7 +61,6 @@ func StartPrivateListener() {
 		Logger.Error("Error starting private API listener. Strange tls config")
 		os.Exit(1)
 	}
-
 }
 
 func main() {
@@ -108,10 +109,12 @@ func main() {
 	}
 
 	ApiKeys = &ApiKeyStore{}
-	err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
-	if err != nil {
-		Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
-		os.Exit(1)
+	if Config.HashedApiKeysPath != "\"\"" {
+		err = ApiKeys.LoadFromFile(Config.HashedApiKeysPath)
+		if err != nil {
+			Logger.Error("Loading Api Key list failed", "error", err, "stack", string(debug.Stack()))
+			os.Exit(1)
+		}
 	}
 
 	ocspCertManager = &OCSPCertManager{certsFolderPath: Config.CertsFolderPath, responders: make(map[string]OCSPResponder)}
