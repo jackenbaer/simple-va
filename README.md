@@ -107,6 +107,6 @@ If you leave the path empty (""), API-key authentication is turned off and every
 
 # Installation
 ## Docker 
-```
-docker load -i ~/Downloads/docker_image_v0.0.26.tar.gz
-```
+
+Checkout this [docker-compose.yaml](https://github.com/jackenbaer/simple-va/blob/main/build/docker/docker-compose.yaml) to simply getting started with a quick example. 
+Remove "volumes" if you just want to get a running container. 
