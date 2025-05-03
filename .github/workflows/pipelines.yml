@@ -107,6 +107,7 @@ jobs:
           logout: true
 
       - uses: docker/build-push-action@v5
+        if: github.event_name == 'push' 
         with:
           context: .
           file: ./build/docker/Dockerfile
