@@ -24,6 +24,11 @@ on:
       do-build-docker:
         type: boolean
         default: false
+    secrets:
+      DOCKERHUB_USERNAME:
+        required: true
+      DOCKERHUB_TOKEN:
+        required: true
 jobs:
   test:
     if: ${{ inputs.run-tests }}
