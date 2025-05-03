@@ -93,23 +93,32 @@ jobs:
       - uses: actions/checkout@v4
 
       - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
       - uses: docker/build-push-action@v5
         with:
           context: .
           file: ./build/docker/Dockerfile
-          push: false
-          tags: simple-va:${{ github.ref_name }}
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/simple-va:${{ github.ref_name }}
           outputs: type=docker
 
       - name: Export image to tar.gz
         run: |
-          docker save simple-va:${{ github.ref_name }} \
+          docker save ${{ secrets.DOCKERHUB_USERNAME }}/simple-va:${{ github.ref_name }} \
             | gzip > docker_image_${{ github.ref_name }}.tar.gz
 
       - uses: actions/upload-artifact@v4
         with:
           name: docker_image_${{ github.ref_name }}.tar.gz
           path: docker_image_${{ github.ref_name }}.tar.gz
+        
 
   release:
     if: ${{ inputs.do-release }}
