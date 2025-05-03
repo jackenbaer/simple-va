@@ -89,7 +89,7 @@ jobs:
           path: ./simple-va-${{ matrix.os }}-${{ matrix.arch }}*
 
   docker_image:
-    if: ${{ inputs.do-build-docker }}
+    if: ${{ inputs.do-build-docker && !startsWith(github.ref, 'refs/pull/') }}
     name: Build Docker image & tarball
     needs: build
     runs-on: ubuntu-latest
