@@ -25,10 +25,8 @@ on:
         type: boolean
         default: false
     secrets:
-      DOCKERHUB_USERNAME:
-        required: true
-      DOCKERHUB_TOKEN:
-        required: true
+      DOCKERHUB_USERNAME: {}
+      DOCKERHUB_TOKEN: {}
 jobs:
   test:
     if: ${{ inputs.run-tests }}
